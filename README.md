@@ -15,11 +15,17 @@
   <a href="#как-собрать">Собрать самому</a>
 </p>
 
-https://github.com/romankandeevy/zametochki/raw/main/docs/demo.mp4
+<p align="center">
+  <a href="https://github.com/romankandeevy/zametochki/blob/main/docs/demo.mp4">
+    <img src="docs/video.jpg" alt="Смотреть ролик про Заметочки" width="800">
+  </a>
+  <br>
+  <sub>Нажми, чтобы посмотреть ролик (40 секунд)</sub>
+</p>
 
 Синий фон, почерк [Caveat](https://fonts.google.com/specimen/Caveat), мягкий звук печати и ничего лишнего. Внутри - блоки как в Notion и страницы как в Craft, но без разметки, аккаунтов и облаков: всё хранится только на твоём Mac.
 
-Полный ролик (40 секунд, 1080p) - в [последнем релизе](https://github.com/romankandeevy/zametochki/releases/latest).
+Ролик в 1080p и 60 кадров в секунду - в [последнем релизе](https://github.com/romankandeevy/zametochki/releases/latest).
 
 ## Что умеют
 
