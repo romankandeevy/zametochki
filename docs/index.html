@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Заметочки — заметки для Mac</title>
+<meta name="description" content="Простые и красивые заметки для Mac: почерк Caveat, блоки без разметки, страницы в страницах, подсветка кода, голосовой ввод. Всё хранится только на твоём Mac.">
+<meta property="og:title" content="Заметочки">
+<meta property="og:description" content="Простые и красивые заметки для Mac. Пишешь от руки — а получается аккуратно.">
+<meta property="og:image" content="https://romankandeevy.github.io/zametochki/video.jpg">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1D3594;
+    --blue-dark: #142670;
+    --text: #fff;
+    --muted: rgba(255,255,255,.7);
+    --faint: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: linear-gradient(160deg, var(--blue) 0%, var(--blue-dark) 100%) fixed;
+    color: var(--text);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 56px 16px 80px; }
+  .hero { text-align: center; }
+  .icon { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  h1 { font: 700 clamp(64px, 11vw, 112px)/1 "Caveat", cursive; margin: 18px 0 6px; letter-spacing: .5px; }
+  .lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--muted); margin: 0 auto 28px; max-width: 620px; }
+  .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 44px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 14px; font-weight: 600; text-decoration: none; color: var(--blue); background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.25); transition: transform .15s ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.ghost { background: var(--faint); color: #fff; box-shadow: none; border: 1px solid rgba(255,255,255,.2); }
+  .note { font-size: 13px; color: var(--muted); margin-top: -30px; margin-bottom: 44px; }
+  video { display: block; width: 100%; border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.45); background: var(--blue-dark); }
+  h2 { font: 700 48px/1.1 "Caveat", cursive; text-align: center; margin: 80px 0 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .card { background: var(--faint); border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 18px 20px; }
+  .card b { display: block; font: 700 28px/1.2 "Caveat", cursive; margin-bottom: 4px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 22px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; display: block; border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  .shots figcaption { text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
+  footer { text-align: center; color: var(--muted); font-size: 14px; margin-top: 80px; }
+  footer a { color: #fff; }
+  @media (max-width: 480px) { .shots { grid-template-columns: 1fr; } main { padding-top: 36px; } }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <img class="icon" src="icon.png" alt="">
+    <h1>Заметочки</h1>
+    <p class="lead">Простые и красивые заметки для Mac. Пишешь от руки — а получается аккуратно. Всё хранится только на твоём Mac.</p>
+    <div class="buttons">
+      <a class="btn" href="https://github.com/romankandeevy/zametochki/releases/latest">Скачать для macOS</a>
+      <a class="btn ghost" href="https://github.com/romankandeevy/zametochki">Исходный код на GitHub</a>
+    </div>
+    <p class="note">Бесплатно и с открытым кодом · macOS 14 и новее</p>
+    <video src="demo.mp4" poster="video.jpg" controls autoplay muted loop playsinline preload="auto"></video>
+  </section>
+
+  <h2>Что умеют</h2>
+  <div class="grid">
+    <div class="card"><b>Без разметки</b><p># — заголовок, - — список, [] — задача. Звёздочек и решёток не видно.</p></div>
+    <div class="card"><b>Панель над выделением</b><p>Жирный, курсив, зачёркивание, маркер восьми цветов и цвет текста.</p></div>
+    <div class="card"><b>Меню «/»</b><p>Заголовки, списки, чеклисты, цитаты, код, картинки, таблицы — с поиском.</p></div>
+    <div class="card"><b>Код с подсветкой</b><p>Язык угадывается сам, 17 языков, кнопка «Скопировать».</p></div>
+    <div class="card"><b>Страницы в страницах</b><p>Карточки прямо в тексте, дерево слева и крошки сверху — как в Craft.</p></div>
+    <div class="card"><b>Свой стиль</b><p>Пять шрифтов, фоны, обложки, цвета. Иконка в Dock подстраивается под стиль.</p></div>
+    <div class="card"><b>Голос и Т9</b><p>Голосовой ввод на самом Mac, без интернета. Исправление опечаток и подсказки слов.</p></div>
+    <div class="card"><b>Только локально</b><p>Мгновенное сохранение, резервные копии, экспорт всех заметок в Markdown.</p></div>
+  </div>
+
+  <h2>Как выглядит</h2>
+  <div class="shots">
+    <figure><img src="11-format.png" alt="" loading="lazy"><figcaption>Панель стилей над выделением</figcaption></figure>
+    <figure><img src="12-slash.png" alt="" loading="lazy"><figcaption>Меню блоков по «/»</figcaption></figure>
+    <figure><img src="04-code.png" alt="" loading="lazy"><figcaption>Код с подсветкой синтаксиса</figcaption></figure>
+    <figure><img src="02-page.png" alt="" loading="lazy"><figcaption>Страница внутри страницы</figcaption></figure>
+    <figure><img src="06-craft.png" alt="" loading="lazy"><figcaption>Вариант Craft: дерево и панель блоков</figcaption></figure>
+    <figure><img src="07-notebook.png" alt="" loading="lazy"><figcaption>Вариант Тетрадь: только текст</figcaption></figure>
+  </div>
+
+  <footer>
+    Сделал <a href="https://github.com/romankandeevy">Роман Кандеев</a> · <a href="https://github.com/romankandeevy/zametochki">GitHub</a> · MIT
+  </footer>
+</main>
+</body>
+</html>

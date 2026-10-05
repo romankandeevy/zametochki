@@ -16,11 +16,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/romankandeevy/zametochki/blob/main/docs/demo.mp4">
+  <a href="https://romankandeevy.github.io/zametochki/">
     <img src="docs/video.jpg" alt="Смотреть ролик про Заметочки" width="800">
   </a>
   <br>
-  <sub>Нажми, чтобы посмотреть ролик (40 секунд)</sub>
+  <sub>Нажми, чтобы посмотреть ролик (40 секунд) · <a href="https://romankandeevy.github.io/zametochki/">сайт проекта</a></sub>
 </p>
 
 Синий фон, почерк [Caveat](https://fonts.google.com/specimen/Caveat), мягкий звук печати и ничего лишнего. Внутри - блоки как в Notion и страницы как в Craft, но без разметки, аккаунтов и облаков: всё хранится только на твоём Mac.
