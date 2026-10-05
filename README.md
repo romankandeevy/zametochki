@@ -15,9 +15,7 @@
   <a href="#как-собрать">Собрать самому</a>
 </p>
 
-<p align="center">
-  <img src="docs/demo.gif" alt="Заметочки в работе" width="720">
-</p>
+https://github.com/romankandeevy/zametochki/raw/main/docs/demo.mp4
 
 Синий фон, почерк [Caveat](https://fonts.google.com/specimen/Caveat), мягкий звук печати и ничего лишнего. Внутри - блоки как в Notion и страницы как в Craft, но без разметки, аккаунтов и облаков: всё хранится только на твоём Mac.
 
