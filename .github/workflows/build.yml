@@ -1,0 +1,15 @@
+name: Сборка
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift
+        run: swift --version
+      - name: Сборка
+        run: swift build -c release --product Zametki
