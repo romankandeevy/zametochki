@@ -111,6 +111,8 @@ final class QuickNotePanel: NSPanel {
         appearance = NSAppearance(named: .darkAqua)
     }
 
+    required init?(coder: NSCoder) { fatalError("не используется") }
+
     override var canBecomeKey: Bool { true }
 
     /// Ушёл в другое окно - окошко закрывается само, как Spotlight.

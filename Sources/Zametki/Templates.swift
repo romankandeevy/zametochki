@@ -25,17 +25,10 @@ struct Template: Identifiable {
         return Formatting.doc(from: text)
     }
 
-    private static func day(_ date: Date, _ format: String) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = format
-        return formatter.string(from: date)
-    }
-
     static let all: [Template] = [
         Template(id: "meeting", name: "Встреча", symbol: "person.2") { date in
             """
-            # Встреча · \(day(date, "d MMMM"))
+            # Встреча · \(ruDate(date, "d MMMM"))
             **Кто:**
             **Зачем:**
             ## Обсудили
@@ -50,8 +43,8 @@ struct Template: Identifiable {
             let calendar = Calendar(identifier: .iso8601)
             let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)) ?? date
             let days = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
-            let header = "# Неделя \(day(monday, "d MMM")) – \(day(days.last ?? monday, "d MMM"))\n## Главное на неделе\n[ ] \n"
-            let body = days.map { "## \(day($0, "EEEE, d").capitalized)\n[ ] " }.joined(separator: "\n")
+            let header = "# Неделя \(ruDate(monday, "d MMM")) – \(ruDate(days.last ?? monday, "d MMM"))\n## Главное на неделе\n[ ] \n"
+            let body = days.map { "## \(ruDate($0, "EEEE, d").capitalized)\n[ ] " }.joined(separator: "\n")
             return header + body
         },
         Template(id: "idea", name: "Идея проекта", symbol: "lightbulb") { _ in
@@ -70,7 +63,7 @@ struct Template: Identifiable {
         },
         Template(id: "diary", name: "Дневник дня", symbol: "book") { date in
             """
-            # \(day(date, "d MMMM, EEEE"))
+            # \(ruDate(date, "d MMMM, EEEE"))
             ## Что было хорошего
             -
             ## Что понял
@@ -98,4 +91,12 @@ struct Template: Identifiable {
             """
         },
     ]
+}
+
+/// Дата по-русски в нужном виде: «6 октября», «понедельник, 6».
+private func ruDate(_ date: Date, _ format: String) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.dateFormat = format
+    return formatter.string(from: date)
 }
