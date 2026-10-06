@@ -32,7 +32,8 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; background: var(--ink); color: var(--fg); overscroll-behavior: none; }
+/* Фон под приложением - цвет открытой страницы (скрипт меняет): им iOS красит зону часов и полоску внизу. */
+html, body { margin: 0; height: 100%; background: linear-gradient(180deg, var(--blue), var(--ink)); color: var(--fg); overscroll-behavior: none; }
 body { font: 16px/1.45 var(--ui); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 input, textarea { font: inherit; color: inherit; }
@@ -42,7 +43,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 /* Приложение - ровно по видимой части экрана: когда на iPhone выезжает клавиатура, скрипт уменьшает
    высоту и сдвигает его вслед за видимой областью. Всё «fixed» внутри (панель, листы) - относительно него. */
-#app { position: fixed; top: 0; left: 0; right: 0; height: var(--vvh, 100%); transform: translateY(var(--vvt, 0px)); display: flex; }
+#app { position: fixed; inset: 0; display: flex; }
+.kb-open #app { bottom: auto; height: var(--vvh, 100%); transform: translateY(var(--vvt, 0px)); }
 .screen { position: relative; flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; }
 
 /* ── шапка ── */

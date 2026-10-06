@@ -271,7 +271,7 @@
     flushSaves();
     closePopup();
     if (!wide()) { noteScreen.hidden = true; listScreen.hidden = false; openId = null; document.body.classList.add('no-note'); }
-    setThemeColor('#1D3594');
+    setThemeColor('#1D3594', 'linear-gradient(180deg, #1D3594, #142670)');
     renderList();
   }
 
@@ -283,7 +283,13 @@
   $('#btn-back').addEventListener('click', goBack);
   addEventListener('popstate', () => showList());
 
-  function setThemeColor(c) { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = c; }
+  /// Цвет вокруг приложения: зона часов сверху, полоска снизу и фон под страницей - в цвет открытой заметки.
+  function setThemeColor(c, bg = c) {
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = c;
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+  }
   function applyStyle(style) {
     const v = styleVars(style);
     noteScreen.style.setProperty('--page-bg', v.bg);
@@ -293,7 +299,7 @@
     noteScreen.style.setProperty('--page-line', v.line);
     noteScreen.classList.toggle('dash', v.dash);
     $('#kbar').style.setProperty('--page-base', v.base);
-    setThemeColor(v.base);
+    setThemeColor(v.base, v.bg);
   }
 
   // ───────── отрисовка заметки ─────────
@@ -1692,9 +1698,14 @@
   function fitViewport() {
     const vv = window.visualViewport;
     if (!vv) return;
-    app.style.setProperty('--vvh', vv.height + 'px');
-    app.style.setProperty('--vvt', vv.offsetTop + 'px');
-    document.body.classList.toggle('kb-rest', innerHeight - vv.height < 120);
+    // Без клавиатуры приложение просто на весь экран; с ней - ровно по видимой части над клавиатурой.
+    const open = innerHeight - vv.height > 120;
+    document.body.classList.toggle('kb-open', open);
+    document.body.classList.toggle('kb-rest', !open);
+    if (open) {
+      app.style.setProperty('--vvh', vv.height + 'px');
+      app.style.setProperty('--vvt', vv.offsetTop + 'px');
+    }
     keepCaretVisible();
   }
   if (window.visualViewport) {
