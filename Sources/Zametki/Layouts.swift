@@ -361,10 +361,15 @@ struct TagBar: View {
                       replacementRange: tv.selectedRange())
     }
 
+    private func currentTags(_ id: String) -> [String] {
+        store.note(id)?.doc.tags ?? []
+    }
+
     var body: some View {
         if let id = store.selectedID {
+            let tags: [String] = currentTags(id)
             HStack(spacing: 6) {
-                ForEach(store.note(id)?.doc.tags ?? [], id: \.self) { tag in
+                ForEach(tags, id: \.self) { (tag: String) in
                     HStack(spacing: 4) {
                         Text("#\(tag)")
                         Button { store.removeTag(tag, from: id) } label: {
