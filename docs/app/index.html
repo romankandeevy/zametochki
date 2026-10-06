@@ -24,6 +24,9 @@
     <header class="top">
       <h1 class="brand">Заметочки</h1>
       <div class="actions">
+        <button class="icon-btn" id="btn-quick" aria-label="Быстрая заметка во «Входящие»" title="Быстрая заметка">
+          <svg viewBox="0 0 24 24"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M4 13 6.5 6h11L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>
+        </button>
         <button class="icon-btn" id="btn-reminders" aria-label="Напоминания" title="Напоминания">
           <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.4 15.5A1 1 0 0 0 5.3 17h13.4a1 1 0 0 0 .9-1.5L18 12.6V9a6 6 0 0 0-6-6zM9.5 19a2.5 2.5 0 0 0 5 0"/></svg>
           <span class="dot" id="reminders-dot" hidden></span>
@@ -50,6 +53,7 @@
 
   <!-- Открытая заметка -->
   <section id="note" class="screen" aria-label="Заметка" hidden>
+    <div class="page-img" id="page-img" aria-hidden="true"></div>
     <header class="top note-top">
       <button class="icon-btn back" id="btn-back" aria-label="Назад">
         <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
@@ -63,6 +67,7 @@
       </div>
     </header>
     <div class="scroller" id="scroller">
+      <div class="cover" id="cover" hidden></div>
       <div id="editor" class="editor" aria-label="Текст заметки"></div>
       <div class="tail" id="tail" aria-hidden="true"></div>
     </div>
@@ -77,8 +82,12 @@
     <button data-act="bullet" aria-label="Список"><svg viewBox="0 0 24 24"><circle cx="5" cy="7" r="1.4"/><circle cx="5" cy="17" r="1.4"/><path d="M10 7h10M10 17h10"/></svg></button>
     <button data-act="bold" aria-label="Жирный"><b>Ж</b></button>
     <button data-act="italic" aria-label="Курсив"><i>К</i></button>
+    <button data-act="underline" aria-label="Подчёркнутый"><u>Ч</u></button>
     <button data-act="strike" aria-label="Зачёркнутый"><s>З</s></button>
     <button data-act="mark" aria-label="Маркер"><svg viewBox="0 0 24 24"><path d="m14 4 6 6-9 9H5v-6z"/><path d="M4 21h16" class="warm"/></svg></button>
+    <button data-act="color" aria-label="Цвет текста и маркера"><span class="aa">А</span></button>
+    <button data-act="up" aria-label="Строку выше"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+    <button data-act="down" aria-label="Строку ниже"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
     <button data-act="voice" aria-label="Голосовая заметка"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <button data-act="done" aria-label="Спрятать клавиатуру"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
   </div>
@@ -95,6 +104,8 @@
   <div id="toast" class="toast" role="status" hidden></div>
   <input type="file" id="file-import" accept=".md,.txt,.json,text/plain,text/markdown,application/json" multiple hidden>
   <input type="file" id="file-image" accept="image/*" hidden>
+  <input type="file" id="file-any" hidden>
+  <input type="file" id="file-style" accept="image/*" hidden>
 </div>
 <script src="app.js"></script>
 </body>
