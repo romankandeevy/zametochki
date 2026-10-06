@@ -55,6 +55,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .icon-btn { position: relative; height: 40px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center;
             gap: 4px; border-radius: 12px; color: rgba(255,255,255,.85); }
 .icon-btn:active { background: var(--faint); }
+.icon-btn.on { background: rgba(255,255,255,.18); color: #fff; }
 .icon-btn .dot { position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--warm); }
 .text-btn { font-weight: 700; font-size: 15px; padding: 0 8px; }
 .back { padding-right: 10px; margin-left: -8px; font-size: 16px; }
@@ -198,9 +199,12 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .tablebtns { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 0 0; font: 500 13px var(--ui); }
 .tablebtns button { padding: 4px 10px; border-radius: 8px; background: var(--faint); }
 
-/* фокус: всё, кроме строки с курсором, приглушено */
-.focus-mode .blk { opacity: .22; transition: opacity .25s; }
-.focus-mode .blk.current { opacity: 1; }
+/* фокус: строка с курсором - на мягкой светлой подложке с тёплой полоской слева, остальное приглушено */
+.focus-mode .blk { opacity: .34; transition: opacity .25s, background-color .25s, box-shadow .25s; }
+/* Подложка плотная (цвет страницы чуть светлее): тень-полоска видна только слева, узкой линией. */
+.focus-mode .blk.current { --spot: color-mix(in srgb, var(--page-base) 90%, white 10%);
+  opacity: 1; border-radius: 10px; background: var(--spot);
+  box-shadow: -9px 0 0 -6px #ffdb73, 0 0 0 8px var(--spot); }
 
 /* ── панель над клавиатурой ── */
 .kbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; gap: 2px; overflow-x: auto;

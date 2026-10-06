@@ -1,6 +1,6 @@
 // Заметочки офлайн: всё приложение лежит в кэше, заметки - в IndexedDB на устройстве.
 // Новая версия - новое имя кэша; старый удаляется, когда новая встала.
-const VERSION = 'zametochki-v8';
+const VERSION = 'zametochki-v9';
 const FILES = ['./', 'index.html', 'app.css', 'whiteboard.js', 'app.js', 'manifest.webmanifest', 'Caveat.woff2',
   'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable.png'];
 

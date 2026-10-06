@@ -4,7 +4,7 @@
 (() => {
   // ───────── мелочи ─────────
   /// Видно в настройках: по нему ясно, доехало ли обновление.
-  const APP_VERSION = 8;
+  const APP_VERSION = 9;
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2427,13 +2427,19 @@
     statsBtn.textContent = picked ? `выделено ${picked} ${plural(picked, 'слово', 'слова', 'слов')}`
       : `${words} ${plural(words, 'слово', 'слова', 'слов')} · ${Math.max(1, Math.ceil(words / 180))} мин чтения`;
     statsBtn.classList.toggle('focus', editor.classList.contains('focus-mode'));
+    $('#btn-focus').classList.toggle('on', editor.classList.contains('focus-mode'));
   }
-  statsBtn.addEventListener('click', () => {
+  /// Режим фокуса: кнопка-прицел в шапке, счётчик слов и «⋯» - одно и то же.
+  function toggleFocus() {
     editor.classList.toggle('focus-mode');
     local.set('focus', editor.classList.contains('focus-mode'));
     toast(editor.classList.contains('focus-mode') ? 'Режим фокуса: видно только строку, которую пишешь' : 'Режим фокуса выключен');
     updateStats();
-  });
+  }
+  statsBtn.addEventListener('click', toggleFocus);
+  $('#btn-focus').addEventListener('click', toggleFocus);
+  // Кнопка не забирает фокус у строки - клавиатура не прячется.
+  $('#btn-focus').addEventListener('pointerdown', e => e.preventDefault());
 
   // ───────── звук печати ─────────
   let audioCtx = null;

@@ -59,6 +59,7 @@ struct QuietLayout: View {
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 2) {
+                FocusButton()
                 StyleButton(store: store)
                 NoteMenu(store: store)
             }
@@ -106,6 +107,7 @@ struct CraftLayout: View {
                     if !showList { SidebarToggle(shown: $showList).padding(.leading, 76) }
                     Breadcrumbs(store: store, showSingle: true)
                     Spacer()
+                    FocusButton()
                     MicButton()
                     if !showInspector { InspectorToggle(shown: $showInspector) }
                     if !showInspector { NoteMenu(store: store) }
@@ -229,6 +231,7 @@ struct NotebookToolbar: View {
             }
             .buttonStyle(.plain)
             .help("Все блоки")
+            FocusButton().frame(width: 38, height: 36)
             divider
             MicButton(prominent: true)
         }
@@ -295,6 +298,21 @@ struct InspectorToggle: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Панель справа")
             .help("Блоки и стиль страницы (⌥⌘\\)")
+    }
+}
+
+/// Режим фокуса: всё, кроме строки с курсором, приглушено. То же, что ⇧⌘F и нажатие на счётчик слов.
+struct FocusButton: View {
+    @AppStorage("focusMode") private var focus = false
+
+    var body: some View {
+        Button {
+            focus.toggle()
+            Editor.Coordinator.active?.applyFocus()
+        } label: { BarIcon(symbol: "scope", isOn: focus) }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Режим фокуса")
+            .help(focus ? "Режим фокуса включён - нажми, чтобы выключить (⇧⌘F)" : "Режим фокуса: видно только строку, которую пишешь (⇧⌘F)")
     }
 }
 

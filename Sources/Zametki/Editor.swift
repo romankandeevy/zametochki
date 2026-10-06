@@ -1100,7 +1100,8 @@ struct Editor: NSViewRepresentable {
                 return
             }
             let current = NSIntersectionRange(paragraphRange(at: textView.selectedRange().location), all)
-            let dim = Style.text.withAlphaComponent(0.22)
+            // Остальное - приглушено, но читается: строку в фокусе выделяет подложка (drawFocusSpot).
+            let dim = Style.text.withAlphaComponent(0.34)
             let before = NSRange(location: 0, length: current.location)
             let after = NSRange(location: NSMaxRange(current), length: storage.length - NSMaxRange(current))
             if current.length > 0 { layout.removeTemporaryAttribute(.foregroundColor, forCharacterRange: current) }
@@ -1817,6 +1818,34 @@ final class NotesTextView: NSTextView {
         super.drawBackground(in: rect)
         drawCover()
         drawCodeBackgrounds(in: rect)
+        drawFocusSpot()
+    }
+
+    /// Режим фокуса: строка с курсором - на мягкой светлой подложке с тёплой полоской слева, сразу видно, где ты.
+    private func drawFocusSpot() {
+        guard UserDefaults.standard.bool(forKey: "focusMode"),
+              let storage = textStorage, let layout = layoutManager, let container = textContainer else { return }
+        let ns = storage.string as NSString
+        let caret = selectedRange()
+        let paragraph = ns.paragraphRange(for: NSRange(location: min(caret.location, ns.length), length: 0))
+        var line = NSRect.null
+        if paragraph.length == 0 || paragraph.location >= ns.length {
+            line = layout.extraLineFragmentUsedRect
+        } else {
+            var chars = paragraph
+            if chars.length > 1, ns.substring(with: paragraph).hasSuffix("\n") { chars.length -= 1 }
+            let glyphs = layout.glyphRange(forCharacterRange: chars, actualCharacterRange: nil)
+            layout.enumerateLineFragments(forGlyphRange: glyphs) { _, used, _, _, _ in line = line.union(used) }
+        }
+        guard !line.isNull, line.height > 0 else { return }
+        let left = textContainerOrigin.x + container.lineFragmentPadding
+        let width = min(container.size.width, bounds.width) - container.lineFragmentPadding * 2
+        let spot = NSRect(x: left - 16, y: textContainerOrigin.y + line.minY - 6, width: width + 32, height: line.height + 12)
+        NSColor.white.withAlphaComponent(0.075).setFill()
+        NSBezierPath(roundedRect: spot, xRadius: 12, yRadius: 12).fill()
+        NSColor(srgbRed: 1, green: 0.86, blue: 0.45, alpha: 0.9).setFill()
+        NSBezierPath(roundedRect: NSRect(x: spot.minX + 6, y: spot.minY + 9, width: 3, height: max(spot.height - 18, 8)),
+                     xRadius: 1.5, yRadius: 1.5).fill()
     }
 
     private func drawCover() {
