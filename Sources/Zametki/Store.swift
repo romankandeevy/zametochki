@@ -266,6 +266,7 @@ final class Store {
         notes[i].doc = doc
         notes[i].modified = Date()
         scheduleSave(id)
+        doc.tags = notes[i].doc.tags
     }
 
     /// Правка заметки не из её редактора: редактор, если она открыта, перечитает её.
@@ -281,6 +282,7 @@ final class Store {
         notes[i].modified = Date()
         notes[i].revision += 1
         scheduleSave(id)
+        doc.tags = notes[i].doc.tags
     }
 
     /// Блоки, перетащенные на карточку, переезжают в конец страницы.
@@ -331,7 +333,33 @@ final class Store {
         scheduleSave(id)
         expanded.insert(parent)
     }
+    
+// MARK: tags
+var allTags: [(tag: String, count: Int)] {
+    var counts: [String: Int] = [:]
+    for n in notes { for t in n.doc.tags ?? [] { counts[t, default: 0] += 1 } }
+    return counts.map { ($0.key, $0.value) }.sorted { $0.tag < $1.tag }
+}
 
+func addTag(_ raw: String, to id: String) {
+    let tag = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        .trimmingCharacters(in: CharacterSet(charactersIn: "#")).lowercased()
+    guard !tag.isEmpty, let i = index(id) else { return }
+    var tags = notes[i].doc.tags ?? []
+    guard !tags.contains(tag) else { return }
+    tags.append(tag)
+    notes[i].doc.tags = tags
+    notes[i].modified = Date()
+    scheduleSave(id)
+}
+
+func removeTag(_ tag: String, from id: String) {
+    guard let i = index(id) else { return }
+    notes[i].doc.tags?.removeAll { $0 == tag }
+    if notes[i].doc.tags?.isEmpty == true { notes[i].doc.tags = nil }
+    notes[i].modified = Date()
+    scheduleSave(id)
+}
     // MARK: удаление
 
     /// Заметка и все её страницы уходят в Корзину - случайное удаление можно вернуть.

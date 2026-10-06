@@ -1,0 +1,17 @@
+   name: Build
+   on: [push, workflow_dispatch]
+   jobs:
+     build:
+       runs-on: macos-latest
+       steps:
+         - uses: actions/checkout@v4
+         - name: Apply English patch
+           run: git apply --whitespace=nowarn zametochki-english.patch
+         - name: Build
+           run: bash build.sh
+         - name: Package
+           run: cd build && ditto -c -k --sequesterRsrc --keepParent Zametki.app Zametki-en.zip
+         - uses: actions/upload-artifact@v4
+           with:
+             name: Zametki-app
+             path: build/Zametki-en.zip
