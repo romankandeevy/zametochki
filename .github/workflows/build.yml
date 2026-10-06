@@ -21,33 +21,33 @@ jobs:
         continue-on-error: true
         run: |
           # Иконку (.icon) собирает только свежий Xcode - для скриншота хватит приложения без неё.
-          APP=build/Zametki.app
-          mkdir -p $APP/Contents/MacOS $APP/Contents/Resources
-          cp "$(swift build -c release --show-bin-path)/Zametki" $APP/Contents/MacOS/
-          cp Resources/Info.plist $APP/Contents/
-          cp Resources/Caveat.ttf $APP/Contents/Resources/
-          codesign --force --sign - $APP
-          python3 tools/ci-demo.py
+          bundle() {
+            mkdir -p $2/Contents/MacOS $2/Contents/Resources
+            cp "$1/Zametki" $2/Contents/MacOS/
+            cp Resources/Info.plist $2/Contents/
+            cp Resources/Caveat.ttf $2/Contents/Resources/
+            codesign --force --sign - $2
+          }
+          shot() {
+            python3 tools/ci-demo.py
+            open "$1" --args -openNote demo-ci "${@:3}"
+            sleep 10
+            screencapture -x "artifacts/$2.png"
+            pkill -x Zametki || true
+            sleep 2
+          }
+          bundle "$(swift build -c release --show-bin-path)" build/Zametki.app
+          # Та же сцена в версии из main - чтобы отличить свою поломку от особенностей CI.
+          git fetch --depth=1 origin main
+          git worktree add ../main FETCH_HEAD
+          (cd ../main && swift build -c release --product Zametki)
+          bundle "$(cd ../main && swift build -c release --show-bin-path)" build/Main.app
           mkdir -p artifacts
-          open build/Zametki.app --args -openNote demo-ci
-          sleep 10
-          screencapture -x artifacts/app.png
-          pkill -x Zametki || true
-          sleep 2
-          open build/Zametki.app --args -openNote demo-ci -uiLayout craft -inspectorShown YES -demoType /
-          sleep 10
-          screencapture -x artifacts/app-menu.png
-          pkill -x Zametki || true
-          sleep 2
-          open build/Zametki.app --args -openNote demo-ci -uiLayout quiet -demoType /
-          sleep 10
-          screencapture -x artifacts/app-slash.png
-          pkill -x Zametki || true
-          sleep 2
-          open build/Zametki.app --args -openNote demo-ci -uiLayout notebook -focusMode YES -demoSelect 40,10
-          sleep 10
-          screencapture -x artifacts/app-focus.png
-          pkill -x Zametki || true
+          shot build/Zametki.app app
+          shot build/Zametki.app app-menu -uiLayout craft -inspectorShown YES -demoType /
+          shot build/Main.app main-slash -uiLayout quiet -demoType /
+          shot build/Zametki.app app-slash -uiLayout quiet -demoType /
+          shot build/Zametki.app app-focus -uiLayout notebook -focusMode YES -demoSelect 40,10
       - name: Картинки экспорта
         if: always()
         uses: actions/upload-artifact@v4
