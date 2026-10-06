@@ -32,21 +32,25 @@
   html { scroll-behavior: smooth; }
   html, body { margin: 0; }
   body {
-    background-color: var(--blue);
-    /* Тетрадная клетка поверх синего - еле заметная, как бумага под текстом. */
+    background: var(--blue-deep);
+    color: var(--text);
+    font: 17px/1.55 var(--ui);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* Фон отдельным слоем во весь экран: тетрадная клетка поверх синего. Слой не едет при прокрутке -
+     и на iPhone тоже, где background-attachment: fixed не работает. */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image:
       linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px),
       radial-gradient(1200px 700px at 50% -10%, #2a46b8 0%, transparent 60%),
       linear-gradient(180deg, var(--blue) 0%, var(--blue-deep) 100%);
     background-size: 28px 28px, 28px 28px, auto, auto;
-    background-attachment: fixed;
-    color: var(--text);
-    font: 17px/1.55 var(--ui);
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
   }
   a { color: inherit; }
+  img { max-width: 100%; height: auto; }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
 
   /* ── шапка ── */
@@ -70,10 +74,10 @@
   .hero .icon { width: 104px; height: 104px; border-radius: 24px; box-shadow: 0 16px 40px rgba(0,0,0,.35);
                 animation: bob 6s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
-  .title { display: block; width: min(560px, 100%); height: auto; margin: 6px auto 0; overflow: visible; }
-  .title text { font: 700 150px var(--hand); fill: #fff; fill-opacity: 0; stroke: #fff; stroke-width: 2;
+  .hero-title { display: block; width: min(560px, 100%); height: auto; margin: 6px auto 0; overflow: visible; }
+  .hero-title text { font: 700 128px var(--hand); fill: #fff; fill-opacity: 0; stroke: #fff; stroke-width: 2;
                 stroke-dasharray: 900; stroke-dashoffset: 900; }
-  .fonts-ready .title text { animation: draw 2.2s cubic-bezier(.6,.1,.3,1) .2s forwards, ink .8s ease 1.9s forwards; }
+  .fonts-ready .hero-title text { animation: draw 2.2s cubic-bezier(.6,.1,.3,1) .2s forwards, ink .8s ease 1.9s forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @keyframes ink { to { fill-opacity: 1; stroke-opacity: 0; } }
   .lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--muted); margin: 4px auto 26px; max-width: 640px; }
@@ -222,7 +226,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
-    .title text { fill-opacity: 1; stroke-opacity: 0; }
+    .hero-title text { fill-opacity: 1; stroke-opacity: 0; }
     .reveal { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
   }
@@ -245,7 +249,7 @@
 <main class="wrap">
   <header class="hero">
     <img class="icon" src="icon.png" alt="Иконка Заметочек">
-    <svg class="title" viewBox="0 0 560 170" role="img" aria-label="Заметочки">
+    <svg class="hero-title" viewBox="0 0 560 170" role="img" aria-label="Заметочки">
       <text x="50%" y="128" text-anchor="middle">Заметочки</text>
     </svg>
     <p class="lead">Простые и красивые заметки для Mac. <b>Пишешь от руки — а получается аккуратно.</b> Без аккаунтов и облаков: всё живёт только на твоём Mac.</p>
@@ -408,7 +412,7 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Заголовок «пишется от руки», когда Caveat загрузился.
-  (document.fonts ? document.fonts.load('700 150px Caveat') : Promise.resolve())
+  (document.fonts ? document.fonts.load("700 128px Caveat") : Promise.resolve())
     .then(() => document.documentElement.classList.add('fonts-ready'))
     .catch(() => document.documentElement.classList.add('fonts-ready'));
 

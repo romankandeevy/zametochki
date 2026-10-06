@@ -60,10 +60,13 @@ struct StatsBadge: View {
                         .monospacedDigit()
                         .contentTransition(.numericText())
                 }
-                .foregroundStyle(.white.opacity(hover ? 0.8 : 0.42))
+                .foregroundStyle(.white.opacity(hover ? 0.85 : 0.55))
                 .padding(.horizontal, 10)
                 .frame(height: 24)
-                .background(Capsule().fill(.white.opacity(hover ? 0.1 : 0.0)))
+                // Своя подложка в тон страницы: плашка не смешивается с текстом, когда он доходит до угла.
+                .background(Capsule().fill(Color(nsColor: PageStyle.current.panelColor).opacity(hover ? 1 : 0.92)))
+                .overlay(Capsule().strokeBorder(.white.opacity(hover ? 0.16 : 0.08)))
+                .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)

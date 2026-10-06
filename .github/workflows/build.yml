@@ -38,6 +38,16 @@ jobs:
           sleep 10
           screencapture -x artifacts/app-menu.png
           pkill -x Zametki || true
+          sleep 2
+          open build/Zametki.app --args -openNote demo-ci -uiLayout quiet -demoType /
+          sleep 10
+          screencapture -x artifacts/app-slash.png
+          pkill -x Zametki || true
+          sleep 2
+          open build/Zametki.app --args -openNote demo-ci -uiLayout notebook -focusMode YES -demoSelect 40,10
+          sleep 10
+          screencapture -x artifacts/app-focus.png
+          pkill -x Zametki || true
       - name: Картинки экспорта
         if: always()
         uses: actions/upload-artifact@v4
