@@ -654,7 +654,7 @@ struct Editor: NSViewRepresentable {
             if content.isEmpty, block(at: paragraph.location) == .text {
                 // Пустая строка - шаблон встаёт прямо на неё.
                 let ownNewline = ns.substring(with: paragraph).hasSuffix("\n")
-                if ownNewline { body.append(NSAttributedString(string: "\n", attributes: Self.lineEnd(of: body))) }
+                if ownNewline, !body.string.hasSuffix("\n") { body.append(NSAttributedString(string: "\n", attributes: Self.lineEnd(of: body))) }
                 start = paragraph.location
                 replace(paragraph, with: body)
             } else {
@@ -663,7 +663,7 @@ struct Editor: NSViewRepresentable {
                 if start == ns.length, !ns.substring(with: paragraph).hasSuffix("\n") {
                     let previous = ns.length > 0 ? storage.attributes(at: ns.length - 1, effectiveRange: nil) : [:]
                     body.insert(NSAttributedString(string: "\n", attributes: previous.filter { $0.key != .attachment }), at: 0)
-                } else {
+                } else if !body.string.hasSuffix("\n") {
                     body.append(NSAttributedString(string: "\n", attributes: Self.lineEnd(of: body)))
                 }
                 replace(NSRange(location: start, length: 0), with: body)

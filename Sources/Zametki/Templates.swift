@@ -15,12 +15,10 @@ struct Template: Identifiable {
         let source = markdown(date).split(separator: "\n", omittingEmptySubsequences: false)
             .map { $0 == "-" || $0 == "[ ]" ? String($0) + " " : String($0) }
             .joined(separator: "\n")
-        let doc = Formatting.fromMarkdown(source)
+        // Тип строки живёт на её переносе: без последнего переноса пустая задача в конце стала бы текстом.
+        let doc = Formatting.fromMarkdown(source + "\n")
         guard board else { return doc }
         let text = NSMutableAttributedString(attributedString: Formatting.attributed(doc))
-        // Перенос закрывает последнюю строку и несёт её тип.
-        let last = text.length > 0 ? text.attributes(at: text.length - 1, effectiveRange: nil) : [:]
-        text.append(NSAttributedString(string: "\n", attributes: last))
         text.append(Formatting.object([.zBoard: Board.empty.json, .zBlock: Block.board.rawValue]))
         return Formatting.doc(from: text)
     }

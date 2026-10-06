@@ -128,7 +128,8 @@ final class TemplateTests: XCTestCase {
 
     func testMeetingHasTodo() {
         let lines = blocks(Template.all.first { $0.id == "meeting" }!.doc())
-        XCTAssertTrue(lines.contains { $0.1 == .todo })
+        // Последняя, пустая задача тоже остаётся задачей.
+        XCTAssertEqual(lines.last { !$0.0.isEmpty || $0.1 != .text }?.1, .todo)
         XCTAssertTrue(lines.contains { $0.1 == .bullet })
     }
 

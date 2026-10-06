@@ -17,10 +17,25 @@ jobs:
         run: swift test
         env:
           ZAMETKI_ARTIFACTS: ${{ github.workspace }}/artifacts
+      - name: Скриншоты приложения
+        continue-on-error: true
+        run: |
+          ./build.sh
+          python3 tools/ci-demo.py
+          mkdir -p artifacts
+          open build/Zametki.app --args -openNote demo-ci
+          sleep 10
+          screencapture -x artifacts/app.png
+          pkill -x Zametki || true
+          sleep 2
+          open build/Zametki.app --args -openNote demo-ci -uiLayout craft -inspectorShown YES -demoType /
+          sleep 10
+          screencapture -x artifacts/app-menu.png
+          pkill -x Zametki || true
       - name: Картинки экспорта
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: export
+          name: screenshots
           path: artifacts/
           if-no-files-found: ignore
