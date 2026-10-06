@@ -1523,11 +1523,19 @@ final class NotesTextView: NSTextView {
         // Палочка - ровно по буквам строки: от верха букв до низа, по её базовой линии, а не во всю
         // строку с отступами сверху и снизу. Так на любой строке - в заголовке, в тексте, в списке.
         let font = typingAttributes[.font] as? NSFont ?? Style.font(Style.editorSize)
+        // Пустая последняя строка: macOS ставит курсор без отступа строки (у цитаты, списка он оказывался
+        // у самого края). Ставим туда, где начнётся текст, - как подсказка.
+        let ns = (textStorage?.string ?? "") as NSString
+        let caret = selectedRange()
+        if caret.length == 0, caret.location == ns.length, ns.length == 0 || ns.character(at: ns.length - 1) == 10 {
+            let indent = (typingAttributes[.paragraphStyle] as? NSParagraphStyle)?.firstLineHeadIndent ?? 0
+            rect.origin.x = textContainerOrigin.x + (textContainer?.lineFragmentPadding ?? 5) + indent + Self.caretShift - 1
+        }
         if let baseline = caretBaseline() {
             // Верх - чуть выше заглавных, низ - чуть ниже строки: у Caveat ascender/descender с большим запасом,
-            // и по ним палочка торчала над словом.
-            let top = max(rect.minY, baseline - font.capHeight * 1.2)
-            let bottom = min(rect.maxY, baseline + min(-font.descender, font.pointSize * 0.22))
+            // и по ним палочка торчала над словом. Не обрезаем по рамке macOS: на пустой строке она бывает не там.
+            let top = baseline - font.capHeight * 1.2
+            let bottom = baseline + min(-font.descender, font.pointSize * 0.22)
             if bottom > top { rect.origin.y = floor(top); rect.size.height = ceil(bottom - top) }
         } else {
             let height = ceil(font.ascender - font.descender)
@@ -1570,10 +1578,10 @@ final class NotesTextView: NSTextView {
         return line.minY + layout.location(forGlyphAt: 0).y
     }
 
-    /// Мигающий курсор стирается по старому прямоугольнику - расширяем его, чтобы не оставалось следов.
     override func setNeedsDisplay(_ rect: NSRect, avoidAdditionalLayout flag: Bool) {
-        var rect = rect
-        rect.size.width += Self.caretShift + 2
+        // Мигающий курсор стоит по буквам и с отступом строки - стираем с запасом, чтобы не оставалось следов.
+        var rect = rect.insetBy(dx: 0, dy: -14)
+        rect.size.width += Self.caretShift + 48
         super.setNeedsDisplay(rect, avoidAdditionalLayout: flag)
     }
 

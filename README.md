@@ -12,7 +12,8 @@
 <p align="center">
   <a href="https://github.com/romankandeevy/zametochki/releases/latest"><b>Скачать для macOS</b></a> ·
   <a href="#что-умеют">Что умеют</a> ·
-  <a href="#как-собрать">Собрать самому</a>
+  <a href="#как-собрать">Собрать самому</a> ·
+  <a href="https://romankandeevy.github.io/zametochki/changelog.html">Что нового</a>
 </p>
 
 <p align="center">
