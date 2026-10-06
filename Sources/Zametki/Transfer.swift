@@ -44,7 +44,7 @@ enum Transfer {
             case .toggle: "- "
             case .toggleItem: "  - "
             case .code: "    "
-            case .text, .page, .divider, .image, .file, .table: ""
+            case .text, .page, .divider, .image, .file, .table, .board, .whiteboard, .audio, .template: ""
             }
             if block.isObject {
                 lines.append(objectText(block, storage, range, markdown: true))
@@ -132,6 +132,18 @@ enum Transfer {
                 rows.insert("|" + Array(repeating: " --- |", count: table.columns).joined(), at: min(1, rows.count))
             }
             return rows.joined(separator: "\n")
+        case .board:
+            let board = Board(json: attrs[.zBoard] as? String ?? "")
+            return board.columns.map { column in
+                ([markdown ? "**\(column.title)**" : column.title] + column.cards.map { "- " + $0.text }).joined(separator: "\n")
+            }.joined(separator: "\n\n")
+        case .whiteboard:
+            let board = Whiteboard(json: attrs[.zWhiteboard] as? String ?? "")
+            let texts = board.items.filter { $0.holdsText }.map(\.text).filter { !$0.isEmpty }
+            return (markdown ? "*Доска*" : "[доска]") + (texts.isEmpty ? "" : ": " + texts.joined(separator: " · "))
+        case .audio:
+            let name = attrs[.zAudio] as? String ?? ""
+            return markdown ? "[🎙 голосовая заметка](\(Assets.url(name).absoluteString))" : "[голосовая заметка]"
         default:
             return ""
         }

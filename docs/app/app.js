@@ -4,7 +4,7 @@
 (() => {
   // ───────── мелочи ─────────
   /// Видно в настройках: по нему ясно, доехало ли обновление.
-  const APP_VERSION = 6;
+  const APP_VERSION = 7;
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -50,7 +50,7 @@
   const OBJECTS = [
     ['image', 'Картинка', ICON.image, 'Из фото или камеры', ['картин', 'фото', 'image']],
     ['file', 'Файл', ICON.file, 'Любой файл с телефона', ['файл', 'file', 'вложен']],
-    ['board', 'Доска', ICON.board, 'Канбан: колонки и карточки', ['доск', 'канбан', 'board']],
+    ['board', 'Канбан', ICON.board, 'Колонки и карточки', ['канбан', 'доск', 'kanban', 'board']],
     ['audio', 'Голосовая заметка', ICON.audio, 'Запись с расшифровкой', ['голос', 'аудио', 'запис', 'voice']],
     ['table', 'Таблица', ICON.table, 'Строки и столбцы', ['табл', 'table']],
     ['divider', 'Разделитель', ICON.divider, 'Линия', ['раздел', 'линия', '---']],
@@ -148,8 +148,20 @@
   const saveTimers = new Map();
 
   const note = id => notes.get(id);
+  /// Первая строка заметки - всегда её заголовок H1: тип не меняется, выше ничего не встаёт.
+  const isTitle = b => { const n = note(openId); return !!(n && b && n.blocks[0] === b); };
+  /// Заголовок на месте: предмет в самом начале получает пустой заголовок над собой, любая первая строка - H1.
+  function ensureTitle(n) {
+    const first = n.blocks[0];
+    if (!first || isObject(first)) { n.blocks.unshift({ id: uid(), type: 'title', html: '' }); return true; }
+    if (first.type === 'title' && !first.collapsed && !first.lang) return false;
+    first.type = 'title';
+    delete first.collapsed; delete first.lang;
+    if (/<br>/.test(first.html || '')) first.html = first.html.replace(/<br>/g, ' ');
+    return true;
+  }
   const blocksText = n => n.blocks.filter(b => !isObject(b)).map(b => plainOf(b.html));
-  function titleOf(n) { return blocksText(n).map(t => t.trim()).find(Boolean) || 'Без названия'; }
+  function titleOf(n) { const first = n.blocks[0]; const t = first && !isObject(first) ? plainOf(first.html).trim() : ''; return t || blocksText(n).map(x => x.trim()).find(Boolean) || 'Без названия'; }
   function previewOf(n) { return blocksText(n).map(t => t.trim()).filter(Boolean)[1] || ''; }
   const children = parent => [...notes.values()].filter(n => (n.parent || null) === parent).sort((a, b) => a.order - b.order);
 
@@ -258,6 +270,8 @@
         : '<div class="empty"><b>Пусто</b>Нажми + внизу - и пиши.</div>';
       return;
     }
+    // Ни у одной заметки нет страниц внутри - стрелкам негде быть, и названия встают ровно под шапкой.
+    listEl.classList.toggle('flat', q !== '' || !rows.some(([n]) => children(n.id).length));
     listEl.innerHTML = rows.map(([n, depth]) => {
       const kids = !q && children(n.id).length > 0;
       const preview = previewOf(n);
@@ -326,8 +340,9 @@
     local.set('lastOpen', id);
     // Одна запись в истории: жест или кнопка «назад» у телефона возвращают к списку.
     if (push && !wide() && !(history.state && history.state.note)) history.pushState({ note: true }, '');
-    // Новая пустая заметка - сразу печатать.
-    if (n.blocks.length === 1 && !plainOf(n.blocks[0].html)) setTimeout(() => focusBlock(n.blocks[0], 0), 60);
+    // Новая пустая заметка - сразу печатать. Фокус - сразу, в том же нажатии: иначе iPhone ставит курсор,
+    // но клавиатуру не показывает.
+    if (n.blocks.length === 1 && !plainOf(n.blocks[0].html)) focusBlock(n.blocks[0], 0);
   }
 
   function showList() {
@@ -386,7 +401,8 @@
 
   function renderNote() {
     const n = note(openId);
-    editor.replaceChildren(...n.blocks.map(renderBlock));
+    if (ensureTitle(n)) save(n, false);
+    editor.replaceChildren(...n.blocks.map(renderBlock), caretEl);
     decorate();
     updateStats();
   }
@@ -424,6 +440,7 @@
 
   /// Поменять тип строки, не пересоздавая поле ввода: курсор и клавиатура остаются на месте.
   function setType(b, type) {
+    if (isTitle(b) && type !== 'title') return;
     const el = elOf(b);
     b.type = type;
     if (type !== 'toggle') delete b.collapsed;
@@ -446,6 +463,7 @@
     n.blocks.forEach((b, i) => {
       const el = elOf(b);
       if (!el) return;
+      el.classList.toggle('is-title', i === 0);
       num = b.type === 'numbered' ? num + 1 : 0;
       if (b.type === 'numbered') el.querySelector('.marker').textContent = num + '.';
       if (b.type === 'toggle') collapsed = !!b.collapsed;
@@ -687,7 +705,11 @@
     n.blocks.splice(n.blocks.indexOf(b), 1);
     const el = elOf(b);
     if (el) el.remove();
-    if (!n.blocks.length) { const nb = { id: uid(), type: 'text', html: '' }; n.blocks.push(nb); editor.append(renderBlock(nb)); }
+    if (!n.blocks.length || isObject(n.blocks[0])) {
+      const nb = { id: uid(), type: 'title', html: '' };
+      n.blocks.unshift(nb);
+      editor.prepend(renderBlock(nb));
+    }
   }
 
   /// Enter: строка делится, хвост уходит в новую. В списке - новый пункт, на пустом пункте - выход из списка.
@@ -719,6 +741,8 @@
     const n = note(openId);
     const txt = el.querySelector('.txt');
     const i = n.blocks.indexOf(b);
+    // Начало заголовка: стирать нечего, и тип у заголовка не снимается.
+    if (i === 0) return true;
     let prev = n.blocks[i - 1];
     while (prev && prev.type === 'toggleItem' && elOf(prev).classList.contains('hidden-item')) prev = n.blocks[n.blocks.indexOf(prev) - 1];
     // В коде и внутри сворачиваемого строка просто склеивается с верхней такого же типа.
@@ -849,7 +873,7 @@
     syncBlock(b, el);
     if (b.type === 'todo') remindChip(b, el);
     // «/» в пустой строке - меню блоков; дальше буквы его фильтруют.
-    if (text.startsWith('/') && text.length <= 16 && !/\s/.test(text) && (popupFor === b || text === '/')) openPopup(b, text.slice(1));
+    if (!isTitle(b) && text.startsWith('/') && text.length <= 16 && !/\s/.test(text) && (popupFor === b || text === '/')) openPopup(b, text.slice(1));
     else if (popupOpen() && popupSlash) closePopup();
     updateStats();
     keepCaretVisible();
@@ -922,7 +946,7 @@
       return;
     }
     const j = act === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= n.blocks.length) return;
+    if (j <= 0 || j >= n.blocks.length) return;
     [n.blocks[i], n.blocks[j]] = [n.blocks[j], n.blocks[i]];
     renderNote(); save(n); selectObject(b);
     elOf(b).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -937,6 +961,8 @@
       if (currentBlock) { const el = elOf(currentBlock); if (el) el.classList.remove('current'); }
       currentBlock = b;
       if (b) { const el = elOf(b); if (el) el.classList.add('current'); }
+      // На заголовке кнопки типа строки и «выше/ниже» не работают - гасим их.
+      $('#kbar').classList.toggle('on-title', isTitle(b));
       if (popupOpen() && popupFor !== b) closePopup();
     }
     updateStats();
@@ -1028,7 +1054,8 @@
   /// Строку с курсором - выше или ниже; курсор едет вместе с ней.
   function moveBlock(b, dir) {
     const n = note(openId), i = n.blocks.indexOf(b), j = i + dir;
-    if (j < 0 || j >= n.blocks.length) return;
+    // Заголовок не двигается, и выше него ничего не встаёт.
+    if (j <= 0 || i === 0 || j >= n.blocks.length) return;
     const el = elOf(b), txt = el.querySelector('.txt'), at = txt ? caretOffset(txt) : 0;
     [n.blocks[i], n.blocks[j]] = [n.blocks[j], n.blocks[i]];
     const other = elOf(n.blocks[i]);
@@ -1047,7 +1074,8 @@
     popupFor = b; popupSlash = slash;
     const ql = q.toLowerCase();
     const match = it => !ql || it[1].toLowerCase().includes(ql) || it[4].some(k => k.startsWith(ql) || (ql.startsWith(k) && k.length >= 2)) || it[3] === ql;
-    const basic = BASIC.filter(match), objs = OBJECTS.filter(match);
+    // На заголовке тип строки не меняется - в меню только то, что встаёт под ним.
+    const basic = isTitle(b) ? [] : BASIC.filter(match), objs = OBJECTS.filter(match);
     popupItems = [...basic.map(x => ['basic', x]), ...objs.map(x => ['obj', x])];
     if (!popupItems.length) return closePopup();
     popupIndex = Math.min(popupIndex, popupItems.length - 1);
@@ -1123,7 +1151,7 @@
     const child = newNote({ parent: parent.id, blocks: [{ id: uid(), type: 'title', html: esc(title) }], open: false });
     const card = { id: uid(), type: 'page', page: child.id };
     const i = parent.blocks.indexOf(b);
-    if (b.type === 'text' || title) { parent.blocks.splice(i, 1, card); el.replaceWith(renderBlock(card)); }
+    if (!isTitle(b) && (b.type === 'text' || title)) { parent.blocks.splice(i, 1, card); el.replaceWith(renderBlock(card)); }
     else { insertAfter(b, card); }
     decorate(); save(parent);
     if (!title) openNote(child.id, true);
@@ -1569,7 +1597,7 @@
         if (asNew || !b) return newNote({ blocks: templateBlocks(t) });
         const n = note(openId), blocks = templateBlocks(t);
         const i = n.blocks.indexOf(b);
-        const empty = b.type === 'text' && !plainOf(b.html).trim();
+        const empty = (b.type === 'text' || i === 0) && !plainOf(b.html).trim();
         n.blocks.splice(empty ? i : i + 1, empty ? 1 : 0, ...blocks);
         renderNote(); save(n);
         focusBlock(blocks[0], 'end');
@@ -2415,6 +2443,110 @@
       else if (rect.top < box.top + 8) scroller.scrollTop -= box.top + 8 - rect.top;
     });
   }
+
+  // ───────── свой курсор ─────────
+  // Курсор браузера - во всю высоту шрифта (у Caveat она с большим запасом), и палочка торчит над словом.
+  // Свой курсор - как на Mac: стоит на базовой линии строки, высотой с буквы. Так на любой строке.
+  const caretEl = document.createElement('div');
+  caretEl.className = 'caret';
+  caretEl.hidden = true;
+  editor.append(caretEl);
+  const fontMetrics = new Map();
+  /// Для шрифта строки: где от верха строки базовая линия, где верх «коробки» букв, высота заглавных.
+  function metricsOf(txt) {
+    const cs = getComputedStyle(txt);
+    const key = cs.font + '|' + cs.lineHeight;
+    let m = fontMetrics.get(key);
+    if (m) return m;
+    const probe = document.createElement('div');
+    probe.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;white-space:nowrap;font:${cs.font};line-height:${cs.lineHeight}`;
+    probe.innerHTML = '<span>Нg</span><i style="display:inline-block;width:0;height:0;vertical-align:baseline"></i>';
+    document.body.append(probe);
+    const top = probe.getBoundingClientRect().top;
+    const glyphs = probe.firstChild.getBoundingClientRect();
+    const base = probe.lastChild.getBoundingClientRect().top - top;
+    const line = probe.getBoundingClientRect().height;
+    probe.remove();
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.font = cs.font;
+    const size = parseFloat(cs.fontSize);
+    const cap = ctx.measureText('Н').actualBoundingBoxAscent || size * 0.68;
+    m = { base, boxTop: glyphs.top - top, boxHeight: glyphs.height, line, cap, size };
+    fontMetrics.set(key, m);
+    return m;
+  }
+  /// Буква рядом с курсором и её прямоугольник: по ней видно строку и базовую линию. Слева - если есть, иначе справа.
+  function charBeside(range, txt) {
+    let node = range.startContainer, offset = range.startOffset;
+    if (node.nodeType !== 3) {
+      // Курсор стоит между элементами - ищем ближайший текст до него, а если нет - после.
+      const walk = document.createTreeWalker(txt, NodeFilter.SHOW_TEXT);
+      const before = node.childNodes[offset - 1], after = node.childNodes[offset];
+      let prevText = null, nextText = null;
+      while (walk.nextNode()) {
+        const t = walk.currentNode;
+        if (!t.length) continue;
+        const pos = after ? after.compareDocumentPosition(t) : Node.DOCUMENT_POSITION_PRECEDING;
+        if (after && (pos & Node.DOCUMENT_POSITION_FOLLOWING || after.contains(t))) { nextText = nextText || t; }
+        else if (!before || before === t || before.contains(t) || (before.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_PRECEDING)) prevText = t;
+      }
+      if (prevText) { node = prevText; offset = prevText.length; }
+      else if (nextText) { node = nextText; offset = 0; }
+      else return null;
+    }
+    const r = document.createRange();
+    const text = node.nodeValue;
+    if (offset > 0 && text[offset - 1] !== '\n') {
+      r.setStart(node, offset - 1); r.setEnd(node, offset);
+      const rects = [...r.getClientRects()].filter(x => x.height > 0);
+      const rect = rects[rects.length - 1];
+      if (rect) return { rect, x: rect.right };
+    }
+    if (offset < text.length && text[offset] !== '\n') {
+      r.setStart(node, offset); r.setEnd(node, offset + 1);
+      const rect = [...r.getClientRects()].find(x => x.height > 0);
+      if (rect) return { rect, x: rect.left };
+    }
+    return null;
+  }
+  let caretTimer = 0;
+  function placeOwnCaret() {
+    const sel = getSelection();
+    const node = sel.rangeCount && sel.isCollapsed ? sel.anchorNode : null;
+    const txt = node && (node.nodeType === 1 ? node : node.parentElement).closest('.txt');
+    if (!txt || !editor.contains(txt) || document.activeElement !== txt) { caretEl.hidden = true; return; }
+    const m = metricsOf(txt);
+    const near = charBeside(sel.getRangeAt(0), txt);
+    let baseline, x;
+    if (near) {
+      const rect = near.rect;
+      x = near.x;
+      // Браузер отдаёт либо «коробку» букв, либо всю строку - по высоте понятно, что именно.
+      const isLine = Math.abs(rect.height - m.line) < Math.abs(rect.height - m.boxHeight);
+      baseline = isLine ? rect.top + m.base : rect.top - m.boxTop + m.base;
+    } else {
+      // Пустая строка (или сразу после переноса): от верха поля.
+      const box = txt.getBoundingClientRect();
+      x = box.left + parseFloat(getComputedStyle(txt).paddingLeft || 0);
+      baseline = box.top + m.base;
+      if (txt.textContent) { caretEl.hidden = true; return; }
+    }
+    const host = editor.getBoundingClientRect();
+    const top = baseline - m.cap - m.size * 0.06, bottom = baseline + m.size * 0.14;
+    caretEl.style.transform = `translate(${Math.round(x - host.left - 1)}px, ${Math.round(top - host.top)}px)`;
+    caretEl.style.height = Math.round(bottom - top) + 'px';
+    caretEl.hidden = false;
+    // Пока курсор двигается - не мигает.
+    caretEl.classList.remove('blink');
+    clearTimeout(caretTimer);
+    caretTimer = setTimeout(() => caretEl.classList.add('blink'), 500);
+  }
+  const caretSoon = () => setTimeout(placeOwnCaret, 0);
+  document.addEventListener('selectionchange', caretSoon);
+  editor.addEventListener('input', caretSoon);
+  editor.addEventListener('focusout', () => setTimeout(placeOwnCaret, 0));
+  addEventListener('resize', caretSoon);
+  if (document.fonts) document.fonts.ready.then(() => { fontMetrics.clear(); caretSoon(); });
 
   // ───────── клавиатура iPhone ─────────
   // Приложение подстраивается под видимую часть экрана: панель встаёт прямо над клавиатурой, шапка не уезжает.

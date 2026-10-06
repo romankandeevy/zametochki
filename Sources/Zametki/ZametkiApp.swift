@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+import UserNotifications
 
 @main
 struct ZametkiApp: App {
@@ -10,6 +11,7 @@ struct ZametkiApp: App {
     @AppStorage("inspectorShown") private var showInspector = false
     @AppStorage("typingSound") private var typingSound = true
     @AppStorage("autoCapitalize") private var autoCapitalize = true
+    @AppStorage("focusMode") private var focusMode = false
 
     init() {
         Style.registerFont()
@@ -38,6 +40,8 @@ struct ZametkiApp: App {
                 Divider()
                 Button("Голосовой ввод") { Dictation.shared.toggle() }
                     .keyboardShortcut("d", modifiers: [.command, .shift])
+                Button("Голосовая заметка") { Editor.Coordinator.active?.insert(.audio) }
+                    .keyboardShortcut("d", modifiers: [.command, .shift, .option])
             }
             CommandMenu("Формат") {
                 format("Заголовок", .block(.title), "1", [.command, .option])
@@ -55,6 +59,17 @@ struct ZametkiApp: App {
                 format("Чеклист", .block(.todo), "l", [.command, .shift])
                 format("Цитата", .block(.quote), "'", [.command, .shift])
                 format("Страница", .block(.page), "p", [.command, .option])
+                Divider()
+                Button("Доска") { Editor.Coordinator.active?.insert(.board) }
+                    .keyboardShortcut("k", modifiers: [.command, .option])
+                Menu("Шаблон") {
+                    ForEach(Template.all) { template in
+                        Button(template.name) {
+                            guard let editor = Editor.Coordinator.active, let text = editor.textView else { return }
+                            editor.insertTemplate(template, at: text.selectedRange().location)
+                        }
+                    }
+                }
             }
             CommandGroup(after: .sidebar) {
                 Button(showInspector ? "Скрыть панель справа" : "Показать панель справа") {
@@ -65,6 +80,13 @@ struct ZametkiApp: App {
                     withAnimation(.snappy(duration: 0.25)) { showList.toggle() }
                 }
                 .keyboardShortcut("\\")
+                Toggle("Режим фокуса", isOn: Binding(get: { focusMode }, set: { on in
+                    focusMode = on
+                    Editor.Coordinator.active?.applyFocus()
+                }))
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+                Button("Быстрая заметка") { QuickNote.shared.show() }
+                    .keyboardShortcut("n", modifiers: [.control, .option])
                 Button("Предыдущая") { store.step(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
                 Button("Следующая") { store.step(1) }.keyboardShortcut(.downArrow, modifiers: [.command, .option])
             }
@@ -82,10 +104,31 @@ extension Notification.Name {
     static let openSettings = Notification.Name("zametki.openSettings")
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     static var store: Store?
 
-    func applicationDidFinishLaunching(_ notification: Notification) { DockIcon.update() }
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        DockIcon.update()
+        UNUserNotificationCenter.current().delegate = self
+        QuickNote.shared.updateHotKey()
+    }
+
+    /// Напоминание видно, даже когда Заметочки открыты.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list, .sound])
+    }
+
+    /// Нажал на напоминание - открывается заметка с этой задачей.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let id = response.notification.request.content.userInfo["note"] as? String
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            if let id { Self.store?.select(id) }
+            completionHandler()
+        }
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) {
         Self.store?.flush()
@@ -129,6 +172,12 @@ struct RootView: View {
         // Настройки - в левом нижнем углу при любом варианте.
         .overlay(alignment: .bottomLeading) {
             SettingsButton(open: $settingsOpen).padding(.leading, 12).padding(.bottom, 10)
+        }
+        // Счётчик слов и режим фокуса - в правом нижнем углу, левее панели справа, если она открыта.
+        .overlay(alignment: .bottomTrailing) {
+            StatsBadge()
+                .padding(.trailing, layout == UILayout.craft.rawValue && showInspector ? 276 + 12 : 14)
+                .padding(.bottom, layout == UILayout.notebook.rawValue ? 24 : 10)
         }
         .sheet(isPresented: $settingsOpen) {
             SettingsView { settingsOpen = false }
@@ -307,10 +356,22 @@ struct NoteFileCommands: View {
         Divider()
         Button("Скопировать заметку") { if let note = store.selected { Transfer.copy(note.doc) } }
             .keyboardShortcut(shortcuts ? KeyboardShortcut("c", modifiers: [.command, .shift]) : nil)
+        Menu("Новая из шаблона") {
+            ForEach(Template.all) { template in
+                Button(template.name) { store.create(doc: template.doc()) }
+            }
+        }
+        Divider()
         Menu("Экспорт") {
             ForEach(Transfer.Format.allCases, id: \.self) { format in
                 Button(format.name) { if let note = store.selected { Transfer.export(note, as: format) } }
             }
+            Divider()
+            Button("PDF - как выглядит страница") { if let note = store.selected { PageExport.save(note, as: .pdf) } }
+            Button("Картинка PNG") { if let note = store.selected { PageExport.save(note, as: .png) } }
+        }
+        Button("Скопировать как картинку") {
+            if let note = store.selected, PageExport.copyImage(note) { store.say("Картинка в буфере - вставляй куда угодно") }
         }
         Button("Импорт…") { store.add(Transfer.pickFiles()) }
             .keyboardShortcut(shortcuts ? KeyboardShortcut("o", modifiers: .command) : nil)
@@ -389,7 +450,7 @@ struct NoteList: View {
         switch variant {
         case .quiet:
             VStack(alignment: .leading, spacing: 2) {
-                NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.currentStyle)
+                NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.style(of: note.id))
                 if depth == 0 {
                     let preview = note.preview.isEmpty ? "" : " · " + note.preview
                     Text(Self.when(note.modified) + preview)

@@ -24,6 +24,14 @@ final class Dictation {
     @ObservationIgnored var onLive: ((String) -> Void)?
     @ObservationIgnored var onFinal: ((String) -> Void)?
     @ObservationIgnored var onCancel: (() -> Void)?
+    /// Голосовая заметка готова: имя аудиофайла во вложениях и расшифровка (пустая, если FlowLocal нет).
+    @ObservationIgnored var onVoiceNote: ((String, String) -> Void)?
+
+    /// Идёт голосовая заметка: звук ещё и пишется в файл, в текст встанет плеер с расшифровкой.
+    private(set) var voiceNote = false
+    /// Без FlowLocal голосовая заметка пишется без расшифровки.
+    @ObservationIgnored private var transcribe = true
+    @ObservationIgnored private var recorded: [Float] = []
 
     @ObservationIgnored private let backend = FlowBackend()
     @ObservationIgnored private let mic = MicRecorder()
@@ -49,10 +57,20 @@ final class Dictation {
         }
     }
 
+    /// Голосовая заметка: запись со звуком. Повторное нажатие - стоп.
+    func toggleVoiceNote() {
+        switch state {
+        case .listening: finish()
+        case .finishing: break
+        default: start(voiceNote: true)
+        }
+    }
+
     // MARK: запись
 
-    private func start() {
-        if let problem = FlowBackend.missing() {
+    private func start(voiceNote: Bool = false) {
+        let problem = FlowBackend.missing()
+        if let problem, !voiceNote {
             fail(problem)
             return
         }
@@ -60,7 +78,7 @@ final class Dictation {
         case .authorized: break
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { ok in
-                DispatchQueue.main.async { ok ? self.start() : self.fail("Нет доступа к микрофону") }
+                DispatchQueue.main.async { ok ? self.start(voiceNote: voiceNote) : self.fail("Нет доступа к микрофону") }
             }
             return
         default:
@@ -68,8 +86,11 @@ final class Dictation {
             return
         }
 
+        self.voiceNote = voiceNote
+        transcribe = problem == nil
+        recorded.removeAll()
         idleStop?.cancel()
-        if !backend.isRunning {
+        if transcribe, !backend.isRunning {
             warming = true
             backend.start()
         }
@@ -84,12 +105,12 @@ final class Dictation {
             return
         }
         state = .listening
-        if backend.isReady { beginSession() }
+        if transcribe, backend.isReady { beginSession() }
         watchEscape()
     }
 
     private func beginSession() {
-        guard !begun, isActive else { return }
+        guard !begun, isActive, transcribe else { return }
         begun = true
         backend.begin(sessionID)
         if !preroll.isEmpty {
@@ -101,6 +122,8 @@ final class Dictation {
 
     private func feed(_ samples: [Float]) {
         guard isActive else { return }
+        if voiceNote { recorded += samples }
+        guard transcribe else { return }
         if begun {
             backend.audio(sessionID, samples)
         } else {
@@ -114,6 +137,7 @@ final class Dictation {
         state = .finishing
         // Порции, которые микрофон уже поставил в очередь главного потока, должны уйти раньше «finish».
         DispatchQueue.main.async {
+            guard self.transcribe else { return self.deliver("") }
             self.finishRequested = true
             if self.begun { self.sendFinish() }
         }
@@ -126,8 +150,7 @@ final class Dictation {
             self.stopWatchingEscape()
             switch result {
             case .success(let text):
-                self.state = .idle
-                self.onFinal?(text)
+                self.deliver(text)
             case .failure(let error):
                 self.onCancel?()
                 self.fail(error.localizedDescription)
@@ -136,11 +159,28 @@ final class Dictation {
         }
     }
 
+    /// Готовый текст: в редактор - строкой, а у голосовой заметки - вместе с записью.
+    private func deliver(_ text: String) {
+        state = .idle
+        stopWatchingEscape()
+        guard voiceNote else { onFinal?(text); return }
+        voiceNote = false
+        let samples = recorded
+        recorded.removeAll()
+        guard let name = VoiceRecording.save(samples) else {
+            onCancel?()
+            return fail("Не получилось сохранить запись")
+        }
+        onVoiceNote?(name, text)
+    }
+
     func cancel() {
         guard isActive else { return }
         mic.stop()
         if begun { backend.cancel(sessionID) }
         sessionID += 1
+        voiceNote = false
+        recorded.removeAll()
         state = .idle
         stopWatchingEscape()
         onCancel?()
@@ -148,6 +188,8 @@ final class Dictation {
     }
 
     private func fail(_ message: String) {
+        voiceNote = false
+        recorded.removeAll()
         state = .failed(message)
         warming = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in

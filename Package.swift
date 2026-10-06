@@ -12,5 +12,10 @@ let package = Package(
             name: "Zametki",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
+        .testTarget(
+            name: "ZametkiTests",
+            dependencies: ["Zametki"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )
