@@ -40,6 +40,7 @@ struct QuietLayout: View {
             }
             VStack(spacing: 0) {
                 Color.clear.frame(height: 52)
+                TagBar(store: store)
                 Editor(store: store)
             }
         }
@@ -113,6 +114,7 @@ struct CraftLayout: View {
                 .frame(height: 52)
                 .padding(.leading, 16)
                 .padding(.trailing, 12)
+                TagBar(store: store)
                 Editor(store: store)
             }
             if showInspector {
@@ -151,6 +153,7 @@ struct NotebookLayout: View {
                     }
                 }
                 .frame(height: 52)
+                TagBar(store: store)
                 Editor(store: store)
                     .padding(.bottom, 64) // место под плавающую полоску
             }
@@ -344,5 +347,46 @@ struct SearchField: View {
         .padding(.horizontal, 10)
         .frame(height: 30)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.white.opacity(0.07)))
+    }
+}
+
+/// Теги заметки + вставка сегодняшней даты (⇧⌘T).
+struct TagBar: View {
+    let store: Store
+    @State private var newTag = ""
+
+    private func insertDate() {
+        guard let tv = NSApp.keyWindow?.firstResponder as? NSTextView else { return }
+        tv.insertText(Date().formatted(date: .abbreviated, time: .omitted),
+                      replacementRange: tv.selectedRange())
+    }
+
+    var body: some View {
+        if let id = store.selectedID {
+            HStack(spacing: 6) {
+                ForEach(store.note(id)?.doc.tags ?? [], id: \.self) { tag in
+                    HStack(spacing: 4) {
+                        Text("#\(tag)")
+                        Button { store.removeTag(tag, from: id) } label: {
+                            Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
+                        }.buttonStyle(.plain)
+                    }
+                    .font(.system(size: 11.5))
+                    .padding(.horizontal, 8).frame(height: 22)
+                    .background(Capsule().fill(.white.opacity(0.12)))
+                }
+                TextField("+ tag", text: $newTag)
+                    .textFieldStyle(.plain).font(.system(size: 11.5)).frame(width: 70)
+                    .onSubmit { store.addTag(newTag, to: id); newTag = "" }
+                Spacer()
+                Button { insertDate() } label: {
+                    Image(systemName: "calendar").font(.system(size: 12)).opacity(0.6)
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .help("Insert today's date (⇧⌘T)")
+            }
+            .padding(.horizontal, 24).frame(height: 28)
+        }
     }
 }
