@@ -256,12 +256,13 @@ final class Store {
 
     // MARK: правка
 
-    func update(_ id: String, doc: Formatting.Doc) {
+      func update(_ id: String, doc: Formatting.Doc) {
         guard let i = index(id) else { return }
         var doc = doc
         doc.parent = notes[i].doc.parent
         doc.order = notes[i].doc.order
         doc.style = notes[i].doc.style
+        doc.tags = notes[i].doc.tags
         guard notes[i].doc != doc else { return }
         notes[i].doc = doc
         notes[i].modified = Date()
@@ -277,12 +278,12 @@ final class Store {
         doc.parent = notes[i].doc.parent
         doc.order = notes[i].doc.order
         doc.style = notes[i].doc.style
+        doc.tags = notes[i].doc.tags
         notes[i].doc = doc
         notes[i].modified = Date()
         notes[i].revision += 1
         scheduleSave(id)
     }
-
     /// Блоки, перетащенные на карточку, переезжают в конец страницы.
     func append(_ paragraphs: NSAttributedString, to id: String) {
         edit(id) { text in
