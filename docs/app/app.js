@@ -12,7 +12,6 @@
     set(k, v) { try { localStorage.setItem('z.' + k, JSON.stringify(v)); } catch {} },
   };
   const plainOf = html => { const d = document.createElement('div'); d.innerHTML = html || ''; return d.textContent.replace(/ /g, ' '); };
-  const isTouch = matchMedia('(pointer: coarse)').matches;
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -1586,7 +1585,7 @@
     const mb = est ? (est.usage / 1048576).toFixed(1) : null;
     const sw = (key, on) => `<button class="switch${on ? ' on' : ''}" data-sw="${key}" role="switch" aria-checked="${on}"></button>`;
     openSheet(`<h3>Настройки</h3>
-      <div class="toggle-row"><span>Звук печати<small>Мягкий щелчок на каждую букву</small></span>${sw('sound', local.get('sound', !isTouch))}</div>
+      <div class="toggle-row"><span>Звук печати<small>Мягкий щелчок на каждую букву</small></span>${sw('sound', local.get('sound', true))}</div>
       <div class="toggle-row"><span>Счётчик слов<small>Слова и время чтения в углу заметки</small></span>${sw('stats', local.get('stats', true))}</div>
       <div class="group">С MAC И НА MAC</div>
       <button class="item" data-a="import"><span class="ic">↓</span><span class="lbl">Открыть файлы<small>.md, .txt, заметки .json с Мака, резервная копия</small></span></button>
@@ -1637,10 +1636,19 @@
 
   // ───────── звук печати ─────────
   let audioCtx = null;
-  function click(kind) {
-    if (!local.get('sound', !isTouch)) return;
+  /// Safari даёт звуку заиграть только после касания - будим его на первом же тапе.
+  function wakeAudio() {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch {}
+  }
+  document.addEventListener('pointerdown', wakeAudio, { passive: true });
+  document.addEventListener('touchend', wakeAudio, { passive: true });
+  function click(kind) {
+    if (!local.get('sound', true)) return;
+    try {
+      wakeAudio();
       const len = Math.floor(audioCtx.sampleRate * (kind === 'enter' ? 0.05 : 0.025));
       const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), data = buf.getChannelData(0);
       for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
