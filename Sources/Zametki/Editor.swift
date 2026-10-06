@@ -157,6 +157,14 @@ struct Editor: NSViewRepresentable {
 
         func textView(_ textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString text: String?) -> Bool {
             guard let text else { return true }
+            if !editingSelf {
+                fixTitleTyping()
+                // Печатают в пустую строку в самом конце: запоминаем, чтобы буква не стала заголовком.
+                let ns = textView.string as NSString
+                titleLeakAt = range.length == 0 && range.location > 0 && range.location == ns.length
+                    && ns.character(at: range.location - 1) == 10
+                    && NSMaxRange(ns.paragraphRange(for: NSRange(location: 0, length: 0))) == range.location ? range.location : nil
+            }
             // «/» в начале пустой строки - откроется меню типа строки.
             if !editingSelf, text == "/", range.length == 0 {
                 let paragraph = paragraphRange(at: range.location)
@@ -977,6 +985,25 @@ struct Editor: NSViewRepresentable {
             if UserDefaults.standard.object(forKey: "typingSound") as? Bool ?? true { TypingSound.shared.play(.space) }
         }
 
+        /// Заголовок - только первая строка. Курсор на пустой строке в конце берёт оформление от переноса строки
+        /// над ней - у заголовка это H1, и строка под ним печаталась бы вторым заголовком. Там - обычный текст.
+        /// Начало пустой последней строки, в которую сейчас печатают (см. fixTitleTyping).
+        private var titleLeakAt: Int?
+
+        private func fixTitleTyping() {
+            guard let textView, let storage = textView.textStorage else { return }
+            let caret = textView.selectedRange()
+            guard caret.length == 0, caret.location > 0, caret.location == storage.length else { return }
+            let ns = storage.string as NSString
+            // Только строка сразу под заголовком: H1, поставленное в конце заметки через «/», не трогаем.
+            guard ns.character(at: caret.location - 1) == 10,
+                  NSMaxRange(ns.paragraphRange(for: NSRange(location: 0, length: 0))) == caret.location,
+                  Formatting.block(of: textView.typingAttributes) == .title else { return }
+            var typing = textView.typingAttributes
+            typing[.zBlock] = nil
+            textView.typingAttributes = Formatting.visual(typing)
+        }
+
         /// Текст заметки для редактора: первая строка - всегда заголовок.
         private static func withTitleLine(_ doc: Formatting.Doc) -> NSAttributedString {
             let text = NSMutableAttributedString(attributedString: Formatting.attributed(doc))
@@ -1001,9 +1028,20 @@ struct Editor: NSViewRepresentable {
                 editingSelf = false
                 return
             }
+            // Буква в строке под заголовком всё же взяла оформление H1 (macOS подставил его при вставке) -
+            // снимаем: заголовок только первая строка.
+            if let at = titleLeakAt, at < storage.length {
+                titleLeakAt = nil
+                let line = (storage.string as NSString).paragraphRange(for: NSRange(location: at, length: 0))
+                if line.location > 0, Formatting.block(of: storage.attributes(at: line.location, effectiveRange: nil)) == .title {
+                    storage.removeAttribute(.zBlock, range: line)
+                }
+            }
+            titleLeakAt = nil
             render()
             // Пустая заметка: первое, что напечатаешь, - заголовок.
             if storage.length == 0 { textView.typingAttributes = Formatting.titleTyping() }
+            fixTitleTyping()
             if let range = pendingFade { startFade(range) }
             pendingFade = nil
             // Живой текст диктовки не сохраняем - в файл попадёт только окончательный.
@@ -1023,6 +1061,7 @@ struct Editor: NSViewRepresentable {
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard !editingSelf else { return }
+            fixTitleTyping()
             textView?.needsDisplay = true // подсказка на пустой строке ходит за курсором
             if textView?.selectedRange().length == 0 { barMode = .main }
             checkSlash()
@@ -1693,9 +1732,14 @@ final class NotesTextView: NSTextView {
         guard content.isEmpty else { return }
         // Пустой заголовок подписывает drawTitleRule - всегда, а не только под курсором.
         if paragraph.location == 0, storage.length > 0 { return }
-        let attrs = paragraph.length > 0 && paragraph.location < storage.length
+        var attrs = paragraph.length > 0 && paragraph.location < storage.length
             ? storage.attributes(at: paragraph.location, effectiveRange: nil) : typingAttributes
-        let block = Formatting.block(of: attrs)
+        var block = Formatting.block(of: attrs)
+        // Заголовок - только первая строка: пустая строка под ним подписана как обычный текст.
+        if block == .title, paragraph.location > 0, paragraph.length == 0 {
+            block = .text
+            attrs[.zBlock] = nil
+        }
         let line: NSRect
         if paragraph.location >= ns.length || paragraph.length == 0 {
             line = layout.extraLineFragmentRect
