@@ -82,6 +82,10 @@
 
 <img src="docs/10-settings-text.png" alt="Настройки">
 
+## На iPhone
+
+[romankandeevy.github.io/zametochki/app](https://romankandeevy.github.io/zametochki/app/) - те же Заметочки в Safari: открой ссылку, «Поделиться» → «На экран „Домой“», и они встанут как приложение и будут работать без интернета. Блоки, меню «/», доска, голосовые заметки, шаблоны, напоминания, стили страниц. Заметки хранятся только на телефоне; с Маком они ходят файлами: Markdown туда и обратно, а заметки `.json` из папки Zametki открываются на iPhone как есть.
+
 ## Данные
 
 - Заметки - обычные JSON-файлы в `~/Library/Application Support/Zametki`.

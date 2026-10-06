@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Заметочки</title>
+<meta name="description" content="Простые и красивые заметки. Пишешь от руки - а получается аккуратно. Всё хранится на телефоне.">
+<meta name="theme-color" content="#1D3594">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Заметочки">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preload" href="Caveat.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+  <!-- Список заметок -->
+  <section id="list" class="screen" aria-label="Заметки">
+    <header class="top">
+      <h1 class="brand">Заметочки</h1>
+      <div class="actions">
+        <button class="icon-btn" id="btn-reminders" aria-label="Напоминания" title="Напоминания">
+          <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.4 15.5A1 1 0 0 0 5.3 17h13.4a1 1 0 0 0 .9-1.5L18 12.6V9a6 6 0 0 0-6-6zM9.5 19a2.5 2.5 0 0 0 5 0"/></svg>
+          <span class="dot" id="reminders-dot" hidden></span>
+        </button>
+        <button class="icon-btn" id="btn-settings" aria-label="Настройки" title="Настройки">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+      </div>
+    </header>
+    <label class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Поиск" autocomplete="off" enterkeyhint="search">
+    </label>
+    <div id="install" class="install" hidden>
+      <b>Поставь на экран «Домой»</b>
+      <span>Нажми <svg viewBox="0 0 24 24" class="share"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> «Поделиться» внизу Safari, потом «На экран „Домой“». Заметочки откроются как приложение и будут работать без интернета.</span>
+      <button class="link" id="install-close">Понятно</button>
+    </div>
+    <div id="notes" class="notes" role="list"></div>
+    <button class="fab" id="btn-new" aria-label="Новая заметка">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </section>
+
+  <!-- Открытая заметка -->
+  <section id="note" class="screen" aria-label="Заметка" hidden>
+    <header class="top note-top">
+      <button class="icon-btn back" id="btn-back" aria-label="Назад">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+        <span id="back-label">Заметки</span>
+      </button>
+      <div class="actions">
+        <button class="icon-btn text-btn" id="btn-style" aria-label="Стиль страницы">Аа</button>
+        <button class="icon-btn" id="btn-more" aria-label="Ещё">
+          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="scroller" id="scroller">
+      <div id="editor" class="editor" aria-label="Текст заметки"></div>
+      <div class="tail" id="tail" aria-hidden="true"></div>
+    </div>
+    <button class="stats" id="stats" aria-label="Слова и режим фокуса" hidden></button>
+  </section>
+
+  <!-- Панель над клавиатурой -->
+  <div id="kbar" class="kbar" hidden>
+    <button data-act="menu" aria-label="Блоки"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-act="title" aria-label="Заголовок"><b>H</b></button>
+    <button data-act="todo" aria-label="Задача"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg></button>
+    <button data-act="bullet" aria-label="Список"><svg viewBox="0 0 24 24"><circle cx="5" cy="7" r="1.4"/><circle cx="5" cy="17" r="1.4"/><path d="M10 7h10M10 17h10"/></svg></button>
+    <button data-act="bold" aria-label="Жирный"><b>Ж</b></button>
+    <button data-act="italic" aria-label="Курсив"><i>К</i></button>
+    <button data-act="strike" aria-label="Зачёркнутый"><s>З</s></button>
+    <button data-act="mark" aria-label="Маркер"><svg viewBox="0 0 24 24"><path d="m14 4 6 6-9 9H5v-6z"/><path d="M4 21h16" class="warm"/></svg></button>
+    <button data-act="voice" aria-label="Голосовая заметка"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    <button data-act="done" aria-label="Спрятать клавиатуру"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+  </div>
+
+  <!-- Меню блоков у строки («/» или «+») - не забирает клавиатуру -->
+  <div id="popup" class="popup" role="listbox" hidden></div>
+
+  <!-- Нижние листы -->
+  <div id="scrim" class="scrim" hidden></div>
+  <div id="sheet" class="sheet" role="dialog" aria-modal="true" hidden>
+    <div class="grab"></div>
+    <div id="sheet-body"></div>
+  </div>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <input type="file" id="file-import" accept=".md,.txt,.json,text/plain,text/markdown,application/json" multiple hidden>
+  <input type="file" id="file-image" accept="image/*" hidden>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

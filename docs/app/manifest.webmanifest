@@ -1,0 +1,17 @@
+{
+  "name": "Заметочки",
+  "short_name": "Заметочки",
+  "description": "Простые и красивые заметки. Пишешь от руки - а получается аккуратно. Всё хранится на телефоне.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1D3594",
+  "theme_color": "#1D3594",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
