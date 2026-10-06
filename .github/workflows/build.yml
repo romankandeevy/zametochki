@@ -20,7 +20,13 @@ jobs:
       - name: Скриншоты приложения
         continue-on-error: true
         run: |
-          ./build.sh
+          # Иконку (.icon) собирает только свежий Xcode - для скриншота хватит приложения без неё.
+          APP=build/Zametki.app
+          mkdir -p $APP/Contents/MacOS $APP/Contents/Resources
+          cp "$(swift build -c release --show-bin-path)/Zametki" $APP/Contents/MacOS/
+          cp Resources/Info.plist $APP/Contents/
+          cp Resources/Caveat.ttf $APP/Contents/Resources/
+          codesign --force --sign - $APP
           python3 tools/ci-demo.py
           mkdir -p artifacts
           open build/Zametki.app --args -openNote demo-ci
