@@ -284,10 +284,33 @@
   const listScreen = $('#list'), noteScreen = $('#note'), editor = $('#editor'), scroller = $('#scroller');
   const wide = () => matchMedia('(min-width: 900px)').matches;
 
+  /// Пустая заметка без страниц внутри - как на Mac: ушёл из неё, её нет. Страницы-внутри не трогаем: у них карточка в родителе.
+  const isEmptyNote = n => !n.parent && !children(n.id).length && n.id !== local.get('inbox', null)
+    && n.blocks.every(b => !isObject(b) && !plainOf(b.html).trim());
+  function dropIfEmpty(id) {
+    const n = note(id);
+    if (!n || !isEmptyNote(n)) return;
+    clearTimeout(saveTimers.get(id)); saveTimers.delete(id);
+    notes.delete(id);
+    DB.del('notes', id).catch(() => {});
+  }
+  /// Уходим со страницы: клавиатура и панель над ней прячутся, пустая заметка удаляется.
+  function leaveNote(next) {
+    hideKeyboard();
+    if (openId && openId !== next) dropIfEmpty(openId);
+  }
+  function hideKeyboard() {
+    if (document.activeElement && editor.contains(document.activeElement)) document.activeElement.blur();
+    $('#kbar').hidden = true;
+    noteScreen.classList.remove('typing');
+    setTimeout(fitViewport, 350);
+  }
+
   function openNote(id, push = false) {
     const n = note(id);
     if (!n) return;
     flushSaves();
+    leaveNote(id);
     openId = id;
     document.body.classList.remove('no-note');
     if (!wide()) { listScreen.hidden = true; }
@@ -308,6 +331,7 @@
   function showList() {
     flushSaves();
     closePopup();
+    leaveNote(null);
     if (!wide()) { noteScreen.hidden = true; listScreen.hidden = false; openId = null; document.body.classList.add('no-note'); }
     setThemeColor('#1D3594', 'linear-gradient(180deg, #1D3594, #142670)');
     renderList();
@@ -925,6 +949,8 @@
   });
   editor.addEventListener('focusout', () => setTimeout(() => {
     if (!editor.contains(document.activeElement)) { kbar.hidden = true; noteScreen.classList.remove('typing'); closePopup(); }
+    // Клавиатура уезжает с анимацией - пересчитываем экран, когда она уже спряталась.
+    setTimeout(fitViewport, 400);
   }, 120));
 
   kbar.addEventListener('click', e => {
@@ -2408,6 +2434,8 @@
     visualViewport.addEventListener('resize', fitViewport);
     visualViewport.addEventListener('scroll', fitViewport);
   }
+  addEventListener('resize', fitViewport);
+  addEventListener('orientationchange', () => setTimeout(fitViewport, 400));
   fitViewport();
   document.body.classList.add('kb-rest');
 
@@ -2437,6 +2465,8 @@
     try { await DB.open(); }
     catch { listEl.innerHTML = '<div class="empty"><b>Не открылось хранилище</b>Похоже, приватный режим Safari. Открой страницу в обычной вкладке.</div>'; return; }
     for (const n of await DB.all('notes')) { notes.set(n.id, n); written.set(n.id, JSON.stringify(n)); }
+    // Пустые «Без названия», оставшиеся с прошлых раз, - убираем.
+    for (const n of [...notes.values()]) dropIfEmpty(n.id);
     if (!notes.size && !local.get('welcomed', false)) { welcome(); local.set('welcomed', true); }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     if (local.get('focus', false)) editor.classList.add('focus-mode');
@@ -2451,8 +2481,19 @@
     if (isIOS && !standalone && !local.get('installSeen', false)) $('#install').hidden = false;
     checkReminders();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      const hadWorker = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // Вернулся в приложение - проверяем, не вышла ли новая версия.
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+      }).catch(() => {});
       navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.open) openNote(e.data.open, true); });
+      // Новая версия встала - перезагружаемся на неё сами (если человек как раз печатает - после).
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadWorker) return;
+        const reload = () => { flushSaves(); location.reload(); };
+        if (editor.contains(document.activeElement)) { toast('Вышло обновление', 'Обновить', reload); document.addEventListener('visibilitychange', reload, { once: true }); }
+        else reload();
+      });
     }
   }
   $('#install-close').addEventListener('click', () => { $('#install').hidden = true; local.set('installSeen', true); });
