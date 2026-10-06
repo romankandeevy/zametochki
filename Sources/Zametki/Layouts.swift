@@ -40,6 +40,7 @@ struct QuietLayout: View {
             }
             VStack(spacing: 0) {
                 Color.clear.frame(height: 52)
+                TagBar(store: store)
                 Editor(store: store)
             }
         }
@@ -113,6 +114,7 @@ struct CraftLayout: View {
                 .frame(height: 52)
                 .padding(.leading, 16)
                 .padding(.trailing, 12)
+                TagBar(store: store)
                 Editor(store: store)
             }
             if showInspector {
@@ -151,6 +153,7 @@ struct NotebookLayout: View {
                     }
                 }
                 .frame(height: 52)
+                TagBar(store: store)
                 Editor(store: store)
                     .padding(.bottom, 64) // место под плавающую полоску
             }
@@ -345,4 +348,9 @@ struct SearchField: View {
         .frame(height: 30)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.white.opacity(0.07)))
     }
+}
+VStack(spacing: 0) {
+    Color.clear.frame(height: 52)
+    TagBar(store: store)
+    Editor(store: store)
 }
