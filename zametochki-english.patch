@@ -1,0 +1,2170 @@
+diff --git a/README.md b/README.md
+index 6f44dd4..1d52ed8 100644
+--- a/README.md
++++ b/README.md
+@@ -135,3 +135,9 @@ Sources/Zametki/
+ ## Лицензия
+ 
+ [MIT](LICENSE). Шрифт Caveat - [SIL Open Font License](Resources/OFL.txt).
++
++## Language / Язык
++
++The interface is available in Russian and English. Choose it in Settings → Look → Language ("Same as system", English or Русский); the change applies after a restart. Strings live in `Resources/en.lproj` and `Resources/ru.lproj`; the Russian text in the code is the lookup key (`L("...")`). To add a language, copy `en.lproj` to `<code>.lproj`, translate the values, add the code to `Localization.available` and to `CFBundleLocalizations` in `Resources/Info.plist`.
++
++Voice input (FlowLocal / GigaAM) recognizes Russian speech only.
+diff --git a/Resources/Info.plist b/Resources/Info.plist
+index d604321..a7cdcc8 100644
+--- a/Resources/Info.plist
++++ b/Resources/Info.plist
+@@ -2,6 +2,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>CFBundleDevelopmentRegion</key><string>en</string>
++	<key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
+ 	<key>CFBundleExecutable</key><string>Zametki</string>
+ 	<key>CFBundleIdentifier</key><string>com.romankandeevy.zametki</string>
+ 	<key>CFBundleName</key><string>Заметочки</string>
+diff --git a/Resources/en.lproj/InfoPlist.strings b/Resources/en.lproj/InfoPlist.strings
+new file mode 100644
+index 0000000..449bbfe
+--- /dev/null
++++ b/Resources/en.lproj/InfoPlist.strings
+@@ -0,0 +1,3 @@
++"CFBundleDisplayName" = "Zametochki";
++"CFBundleName" = "Zametochki";
++"NSMicrophoneUsageDescription" = "Zametochki listens to the microphone only while voice input is on. Audio never leaves this Mac.";
+diff --git a/Resources/en.lproj/Localizable.strings b/Resources/en.lproj/Localizable.strings
+new file mode 100644
+index 0000000..4ac3b2c
+--- /dev/null
++++ b/Resources/en.lproj/Localizable.strings
+@@ -0,0 +1,271 @@
++" · открыть" = " · open";
++"%@ - или напечатай «%@ » в начале строки" = "%@ - or type “%@ ” at the start of a line";
++"+ столбец" = "+ column";
++"+ строка" = "+ row";
++"A · Тихий" = "A · Quiet";
++"C · Тетрадь" = "C · Notebook";
++"FlowLocal на этом Mac, без интернета" = "FlowLocal on this Mac, no internet";
++"RTF (.rtf) - для Pages и Word" = "RTF (.rtf) - for Pages and Word";
++"[картинка: %@]" = "[image: %@]";
++"[файл: %@]" = "[file: %@]";
++"«--» становится «—», кавычки - типографскими" = "“--” becomes “—”, quotes become typographic";
++"Авто" = "Auto";
++"Авто · " = "Auto · ";
++"БАЗОВЫЕ" = "BASIC";
++"Без маркера" = "No highlight";
++"Без названия" = "Untitled";
++"Белый" = "White";
++"Бирюза" = "Turquoise";
++"Блоки" = "Blocks";
++"Блоки и стиль страницы (⌥⌘\\)" = "Blocks and page style (⌥⌘\\)";
++"Большой, для раздела" = "Large, for a section";
++"В начале строки и после точки" = "At the start of a line and after a period";
++"ВСТАВИТЬ" = "INSERT";
++"Верх" = "Top";
++"Вид" = "Look";
++"Вино" = "Wine";
++"Внутри сворачиваемого" = "Inside collapsible";
++"Внутри списка" = "Inside list";
++"Все блоки" = "All blocks";
++"Все заметки уже в этом стиле" = "All notes already use this style";
++"Вчера" = "Yesterday";
++"Выделенная мысль" = "A highlighted thought";
++"Глина" = "Clay";
++"Глубже %ld уровней вкладывать нельзя" = "Pages can't be nested deeper than %ld levels";
++"Говорите. Нажмите ещё раз - вставить, Esc - отмена" = "Speak. Press again to insert, Esc to cancel";
++"Голосовой ввод" = "Voice input";
++"Голосовой ввод (⇧⌘D)" = "Voice input (⇧⌘D)";
++"Голубой" = "Sky blue";
++"Горячие клавиши" = "Shortcuts";
++"Готов к работе" = "Ready";
++"Готово" = "Done";
++"Готово - это стиль по умолчанию" = "Done - this is the default style";
++"Графит" = "Graphite";
++"ДЛЯ ВСЕХ ЗАМЕТОК" = "FOR ALL NOTES";
++"Данные" = "Data";
++"Движок" = "Engine";
++"Действия с заметкой" = "Note actions";
++"Для голосового ввода нужен FlowLocal" = "Voice input needs FlowLocal";
++"Добавить обложку…" = "Add cover…";
++"Жирный" = "Bold";
++"Жирный  ⌘B" = "Bold  ⌘B";
++"Жирный, курсив, подчёркнутый" = "Bold, italic, underline";
++"Жёлтый" = "Yellow";
++"ЗАМЕТКИ" = "NOTES";
++"Заглавные буквы автоматически" = "Capitalize automatically";
++"Заглавные буквы сами" = "Auto-capitalize";
++"Заголовки" = "Headings";
++"Заголовок" = "Heading";
++"Загружаю распознавание… можно уже говорить" = "Loading recognition… you can already speak";
++"Задача" = "Task";
++"Задачи с галочками" = "Tasks with checkmarks";
++"Закат" = "Sunset";
++"Закрыть (Esc)" = "Close (Esc)";
++"Закрыть настройки" = "Close settings";
++"Заметки не прячутся за другими окнами" = "Notes don't hide behind other windows";
++"Заметочки" = "Zametochki";
++"Заметочки · всё хранится на этом Mac" = "Zametochki · everything is stored on this Mac";
++"Зачёркнутый" = "Strikethrough";
++"Зачёркнутый  ⇧⌘X" = "Strikethrough  ⇧⌘X";
++"Звук печати" = "Typing sound";
++"Зелёный" = "Green";
++"Или кнопка микрофона сверху" = "Or the microphone button at the top";
++"Импорт…" = "Import…";
++"Интерфейс" = "Interface";
++"Исправляет опечатки и подсказывает конец слова - Tab, чтобы принять" = "Fixes typos and suggests word endings - Tab to accept";
++"КОД" = "CODE";
++"Как пользоваться" = "How to use";
++"Какао" = "Cocoa";
++"Картинка" = "Image";
++"Картинка не найдена" = "Image not found";
++"Картинка с размытием…" = "Blurred image…";
++"Карточка вложенной страницы" = "Card for a nested page";
++"Карточки страниц" = "Page cards";
++"Кнопки, список и панели - по-разному; заметки и стили общие." = "Buttons, list and panels differ; notes and styles are shared.";
++"Код" = "Code";
++"Копировать, экспорт, импорт" = "Copy, export, import";
++"Коралловый" = "Coral";
++"Красный" = "Red";
++"Крупный" = "Large";
++"Куда сохранить все заметки (Markdown)" = "Where to save all notes (Markdown)";
++"Курсив" = "Italic";
++"Курсив  ⌘I" = "Italic  ⌘I";
++"Лавандовый" = "Lavender";
++"Лагуна" = "Lagoon";
++"Лента" = "Tape";
++"Лес" = "Forest";
++"Лимонный" = "Lemon";
++"Линия" = "Line";
++"Линия, точки или лента" = "Line, dots or tape";
++"Любой файл, лежит рядом" = "Any file, stored alongside";
++"Маленький заголовок" = "Small heading";
++"Маркер" = "Highlighter";
++"Маркер  ⇧⌘M" = "Highlighter  ⇧⌘M";
++"Маркер списка" = "List marker";
++"Маркер: " = "Highlight: ";
++"Мелкий" = "Small";
++"Меню блоков" = "Block menu";
++"Микрофон не запустился: %@" = "Microphone failed to start: %@";
++"Моно" = "Mono";
++"Моноширинный, на подложке" = "Monospaced, on a backdrop";
++"Мягкий щелчок на каждую клавишу" = "A soft click on every key";
++"Мятный" = "Mint";
++"Нажми + или напиши /" = "Press + or type /";
++"Настройки" = "Settings";
++"Настройки (⌘,)" = "Settings (⌘,)";
++"Настройки…" = "Settings…";
++"Начать и закончить" = "Start and stop";
++"Не запустилось распознавание: %@" = "Recognition failed to start: %@";
++"Не найден" = "Not found";
++"Нет доступа к микрофону" = "No microphone access";
++"Нет доступа к микрофону: Системные настройки → Конфиденциальность → Микрофон" = "No microphone access: System Settings → Privacy & Security → Microphone";
++"Низ" = "Bottom";
++"Новая заметка" = "New note";
++"Новая заметка (⌘N)" = "New note (⌘N)";
++"Новая страница внутри" = "New page inside";
++"Новые заметки будут в этом стиле" = "New notes will use this style";
++"Ночь" = "Night";
++"Нумерованный список" = "Numbered list";
++"Обложка" = "Cover";
++"Обычная" = "Regular";
++"Обычный" = "Regular";
++"Обычный текст" = "Plain text";
++"Огромный" = "Huge";
++"Океан" = "Ocean";
++"Окно" = "Window";
++"Округлый" = "Rounded";
++"Олива" = "Olive";
++"Оранжевый" = "Orange";
++"От руки" = "Handwritten";
++"Открыть папку заметок" = "Open notes folder";
++"Отмена" = "Cancel";
++"Отменить" = "Cancel";
++"Очистить поиск" = "Clear search";
++"Ошибка распознавания" = "Recognition error";
++"ПРЕДМЕТЫ" = "OBJECTS";
++"Панель справа" = "Right panel";
++"Перед тем как заметка сильно уменьшится, её прошлая версия кладётся в резервные копии." = "Before a note shrinks sharply, its previous version is saved to backups.";
++"Персиковый" = "Peach";
++"Печать" = "Typing";
++"Пиши… или нажми + слева" = "Write… or press + on the left";
++"По умолчанию - для новых заметок и иконки в Dock. «Ко всем» - перекрасит и уже созданные." = "Default applies to new notes and the Dock icon. “Apply to all” also restyles existing ones.";
++"Поверх всех окон" = "Always on top";
++"Подзаголовок" = "Subheading";
++"Подчёркивать слова с ошибками" = "Underline misspelled words";
++"Подчёркнутый" = "Underline";
++"Подчёркнутый  ⌘U" = "Underline  ⌘U";
++"Поиск" = "Search";
++"Показать в Finder" = "Show in Finder";
++"Показать панель справа" = "Show right panel";
++"Показать список" = "Show list";
++"Показать список (⌘\\)" = "Show list (⌘\\)";
++"Полночь" = "Midnight";
++"Поменьше" = "Smaller";
++"Превратить в" = "Turn into";
++"Предыдущая" = "Previous";
++"Предыдущая, следующая" = "Previous, next";
++"Применить" = "Apply";
++"Применить ко всем заметкам" = "Apply to all notes";
++"Применить этот стиль ко всем заметкам?" = "Apply this style to all notes?";
++"Проверка орфографии" = "Spell check";
++"Простые" = "Plain";
++"Прячет текст под стрелку" = "Hides text under an arrow";
++"Пункт списка" = "List item";
++"Пункты по порядку" = "Items in order";
++"Пункты с точками" = "Items with bullets";
++"Разделители" = "Dividers";
++"Разделитель" = "Divider";
++"Размер текста" = "Text size";
++"Размер текста: " = "Text size: ";
++"Распознавание не ответило" = "Recognition did not respond";
++"Распознавание остановилось" = "Recognition stopped";
++"Рассвет" = "Dawn";
++"Расставляю знаки…" = "Adding punctuation…";
++"Резервные копии" = "Backups";
++"Роза" = "Rose";
++"Розовый" = "Pink";
++"С диска или перетащи файл" = "From disk, or drag a file in";
++"С засечками" = "Serif";
++"С рамкой" = "Outlined";
++"Сворачиваемый список" = "Collapsible list";
++"Сделать стилем по умолчанию" = "Make default style";
++"Сегодня, " = "Today, ";
++"Сейчас" = "Now";
++"Серый" = "Gray";
++"Синий" = "Blue";
++"Сияние" = "Aurora";
++"Скопировано" = "Copied";
++"Скопировать" = "Copy";
++"Скопировать заметку" = "Copy note";
++"Скрыть панель справа" = "Hide right panel";
++"Скрыть список" = "Hide list";
++"Сланец" = "Slate";
++"Следующая" = "Next";
++"Слива" = "Plum";
++"Сменить…" = "Change…";
++"Сначала запустите FlowLocal - он поставит распознавание" = "Launch FlowLocal first - it will install recognition";
++"Сначала запустите FlowLocal - он скачает модели" = "Launch FlowLocal first - it will download the models";
++"Совсем небольшой" = "Very small";
++"Сохранено заметок: %ld" = "Notes saved: %ld";
++"Сохранить все заметки в Markdown…" = "Save all notes as Markdown…";
++"Сохранить сюда" = "Save here";
++"Список" = "List";
++"Список заметок" = "Note list";
++"Список, нумерованный" = "List, numbered";
++"Спрятать список (⌘\\)" = "Hide list (⌘\\)";
++"Стиль" = "Style";
++"Стиль применён ко всем %ld заметкам" = "Style applied to all %ld notes";
++"Стиль страниц" = "Page style";
++"Стиль страницы" = "Page style";
++"Страница" = "Page";
++"Страница внутри" = "Page inside";
++"Страница удалена" = "Page deleted";
++"Строки и столбцы" = "Rows and columns";
++"Т9" = "T9";
++"ТЕКСТ" = "TEXT";
++"Таблица" = "Table";
++"Текст" = "Text";
++"Текст (.txt)" = "Text (.txt)";
++"Текст и печать" = "Text and typing";
++"Тип строки  ↑↓ ↵" = "Line type  ↑↓ ↵";
++"Тире" = "Dash";
++"Тире и кавычки" = "Dashes and quotes";
++"Точка" = "Dot";
++"Точки" = "Dots";
++"Убрать" = "Remove";
++"Удалить" = "Delete";
++"Удалить заметку" = "Delete note";
++"Файл" = "File";
++"Файл не найден" = "File not found";
++"Файлы" = "Files";
++"Фиолетовый" = "Purple";
++"Фон" = "Background";
++"Формат" = "Format";
++"Цвет текста" = "Text color";
++"Цвет текста и маркера" = "Text and highlight color";
++"Цитата" = "Quote";
++"Чеклист" = "Checklist";
++"Чернила" = "Ink";
++"Ширина страницы" = "Page width";
++"Широкая" = "Wide";
++"Шрифт" = "Font";
++"Шрифт, фон и цвета меняются в «Аа» сверху справа. Там же - стиль по умолчанию и «ко всем заметкам»." = "Font, background and colors are changed in “Aa” at the top right. Default style and “apply to all notes” are there too.";
++"Шрифт, фон, обложка и цвета у всех страниц станут как у этой." = "Font, background, cover and colors of every page will match this one.";
++"Экспорт" = "Export";
++"Это стиль по умолчанию" = "This is the default style";
++"Яркие" = "Filled";
++"заметка" = "note";
++"заметки" = "notes";
++"заметок" = "notes";
++"нет входа звука" = "no audio input";
++"слов" = "words";
++"слова" = "words";
++"слово" = "word";
++"− столбец" = "− column";
++"− строка" = "− row";
++"Аа" = "Aa";
++"А" = "A";
++"Язык" = "Language";
++"Язык интерфейса. Применится после перезапуска." = "Interface language. Applies after a restart.";
++"Как в системе" = "Same as system";
++"Перезапустить, чтобы применить" = "Restart to apply";
+diff --git a/Resources/ru.lproj/InfoPlist.strings b/Resources/ru.lproj/InfoPlist.strings
+new file mode 100644
+index 0000000..c374fe3
+--- /dev/null
++++ b/Resources/ru.lproj/InfoPlist.strings
+@@ -0,0 +1,3 @@
++"CFBundleDisplayName" = "Заметочки";
++"CFBundleName" = "Заметочки";
++"NSMicrophoneUsageDescription" = "Заметочки слушают микрофон, только пока включён голосовой ввод. Звук не покидает этот Mac.";
+diff --git a/Resources/ru.lproj/Localizable.strings b/Resources/ru.lproj/Localizable.strings
+new file mode 100644
+index 0000000..ec64816
+--- /dev/null
++++ b/Resources/ru.lproj/Localizable.strings
+@@ -0,0 +1,271 @@
++" · открыть" = " · открыть";
++"%@ - или напечатай «%@ » в начале строки" = "%@ - или напечатай «%@ » в начале строки";
++"+ столбец" = "+ столбец";
++"+ строка" = "+ строка";
++"A · Тихий" = "A · Тихий";
++"C · Тетрадь" = "C · Тетрадь";
++"FlowLocal на этом Mac, без интернета" = "FlowLocal на этом Mac, без интернета";
++"RTF (.rtf) - для Pages и Word" = "RTF (.rtf) - для Pages и Word";
++"[картинка: %@]" = "[картинка: %@]";
++"[файл: %@]" = "[файл: %@]";
++"«--» становится «—», кавычки - типографскими" = "«--» становится «—», кавычки - типографскими";
++"Авто" = "Авто";
++"Авто · " = "Авто · ";
++"БАЗОВЫЕ" = "БАЗОВЫЕ";
++"Без маркера" = "Без маркера";
++"Без названия" = "Без названия";
++"Белый" = "Белый";
++"Бирюза" = "Бирюза";
++"Блоки" = "Блоки";
++"Блоки и стиль страницы (⌥⌘\\)" = "Блоки и стиль страницы (⌥⌘\\)";
++"Большой, для раздела" = "Большой, для раздела";
++"В начале строки и после точки" = "В начале строки и после точки";
++"ВСТАВИТЬ" = "ВСТАВИТЬ";
++"Верх" = "Верх";
++"Вид" = "Вид";
++"Вино" = "Вино";
++"Внутри сворачиваемого" = "Внутри сворачиваемого";
++"Внутри списка" = "Внутри списка";
++"Все блоки" = "Все блоки";
++"Все заметки уже в этом стиле" = "Все заметки уже в этом стиле";
++"Вчера" = "Вчера";
++"Выделенная мысль" = "Выделенная мысль";
++"Глина" = "Глина";
++"Глубже %ld уровней вкладывать нельзя" = "Глубже %ld уровней вкладывать нельзя";
++"Говорите. Нажмите ещё раз - вставить, Esc - отмена" = "Говорите. Нажмите ещё раз - вставить, Esc - отмена";
++"Голосовой ввод" = "Голосовой ввод";
++"Голосовой ввод (⇧⌘D)" = "Голосовой ввод (⇧⌘D)";
++"Голубой" = "Голубой";
++"Горячие клавиши" = "Горячие клавиши";
++"Готов к работе" = "Готов к работе";
++"Готово" = "Готово";
++"Готово - это стиль по умолчанию" = "Готово - это стиль по умолчанию";
++"Графит" = "Графит";
++"ДЛЯ ВСЕХ ЗАМЕТОК" = "ДЛЯ ВСЕХ ЗАМЕТОК";
++"Данные" = "Данные";
++"Движок" = "Движок";
++"Действия с заметкой" = "Действия с заметкой";
++"Для голосового ввода нужен FlowLocal" = "Для голосового ввода нужен FlowLocal";
++"Добавить обложку…" = "Добавить обложку…";
++"Жирный" = "Жирный";
++"Жирный  ⌘B" = "Жирный  ⌘B";
++"Жирный, курсив, подчёркнутый" = "Жирный, курсив, подчёркнутый";
++"Жёлтый" = "Жёлтый";
++"ЗАМЕТКИ" = "ЗАМЕТКИ";
++"Заглавные буквы автоматически" = "Заглавные буквы автоматически";
++"Заглавные буквы сами" = "Заглавные буквы сами";
++"Заголовки" = "Заголовки";
++"Заголовок" = "Заголовок";
++"Загружаю распознавание… можно уже говорить" = "Загружаю распознавание… можно уже говорить";
++"Задача" = "Задача";
++"Задачи с галочками" = "Задачи с галочками";
++"Закат" = "Закат";
++"Закрыть (Esc)" = "Закрыть (Esc)";
++"Закрыть настройки" = "Закрыть настройки";
++"Заметки не прячутся за другими окнами" = "Заметки не прячутся за другими окнами";
++"Заметочки" = "Заметочки";
++"Заметочки · всё хранится на этом Mac" = "Заметочки · всё хранится на этом Mac";
++"Зачёркнутый" = "Зачёркнутый";
++"Зачёркнутый  ⇧⌘X" = "Зачёркнутый  ⇧⌘X";
++"Звук печати" = "Звук печати";
++"Зелёный" = "Зелёный";
++"Или кнопка микрофона сверху" = "Или кнопка микрофона сверху";
++"Импорт…" = "Импорт…";
++"Интерфейс" = "Интерфейс";
++"Исправляет опечатки и подсказывает конец слова - Tab, чтобы принять" = "Исправляет опечатки и подсказывает конец слова - Tab, чтобы принять";
++"КОД" = "КОД";
++"Как пользоваться" = "Как пользоваться";
++"Какао" = "Какао";
++"Картинка" = "Картинка";
++"Картинка не найдена" = "Картинка не найдена";
++"Картинка с размытием…" = "Картинка с размытием…";
++"Карточка вложенной страницы" = "Карточка вложенной страницы";
++"Карточки страниц" = "Карточки страниц";
++"Кнопки, список и панели - по-разному; заметки и стили общие." = "Кнопки, список и панели - по-разному; заметки и стили общие.";
++"Код" = "Код";
++"Копировать, экспорт, импорт" = "Копировать, экспорт, импорт";
++"Коралловый" = "Коралловый";
++"Красный" = "Красный";
++"Крупный" = "Крупный";
++"Куда сохранить все заметки (Markdown)" = "Куда сохранить все заметки (Markdown)";
++"Курсив" = "Курсив";
++"Курсив  ⌘I" = "Курсив  ⌘I";
++"Лавандовый" = "Лавандовый";
++"Лагуна" = "Лагуна";
++"Лента" = "Лента";
++"Лес" = "Лес";
++"Лимонный" = "Лимонный";
++"Линия" = "Линия";
++"Линия, точки или лента" = "Линия, точки или лента";
++"Любой файл, лежит рядом" = "Любой файл, лежит рядом";
++"Маленький заголовок" = "Маленький заголовок";
++"Маркер" = "Маркер";
++"Маркер  ⇧⌘M" = "Маркер  ⇧⌘M";
++"Маркер списка" = "Маркер списка";
++"Маркер: " = "Маркер: ";
++"Мелкий" = "Мелкий";
++"Меню блоков" = "Меню блоков";
++"Микрофон не запустился: %@" = "Микрофон не запустился: %@";
++"Моно" = "Моно";
++"Моноширинный, на подложке" = "Моноширинный, на подложке";
++"Мягкий щелчок на каждую клавишу" = "Мягкий щелчок на каждую клавишу";
++"Мятный" = "Мятный";
++"Нажми + или напиши /" = "Нажми + или напиши /";
++"Настройки" = "Настройки";
++"Настройки (⌘,)" = "Настройки (⌘,)";
++"Настройки…" = "Настройки…";
++"Начать и закончить" = "Начать и закончить";
++"Не запустилось распознавание: %@" = "Не запустилось распознавание: %@";
++"Не найден" = "Не найден";
++"Нет доступа к микрофону" = "Нет доступа к микрофону";
++"Нет доступа к микрофону: Системные настройки → Конфиденциальность → Микрофон" = "Нет доступа к микрофону: Системные настройки → Конфиденциальность → Микрофон";
++"Низ" = "Низ";
++"Новая заметка" = "Новая заметка";
++"Новая заметка (⌘N)" = "Новая заметка (⌘N)";
++"Новая страница внутри" = "Новая страница внутри";
++"Новые заметки будут в этом стиле" = "Новые заметки будут в этом стиле";
++"Ночь" = "Ночь";
++"Нумерованный список" = "Нумерованный список";
++"Обложка" = "Обложка";
++"Обычная" = "Обычная";
++"Обычный" = "Обычный";
++"Обычный текст" = "Обычный текст";
++"Огромный" = "Огромный";
++"Океан" = "Океан";
++"Окно" = "Окно";
++"Округлый" = "Округлый";
++"Олива" = "Олива";
++"Оранжевый" = "Оранжевый";
++"От руки" = "От руки";
++"Открыть папку заметок" = "Открыть папку заметок";
++"Отмена" = "Отмена";
++"Отменить" = "Отменить";
++"Очистить поиск" = "Очистить поиск";
++"Ошибка распознавания" = "Ошибка распознавания";
++"ПРЕДМЕТЫ" = "ПРЕДМЕТЫ";
++"Панель справа" = "Панель справа";
++"Перед тем как заметка сильно уменьшится, её прошлая версия кладётся в резервные копии." = "Перед тем как заметка сильно уменьшится, её прошлая версия кладётся в резервные копии.";
++"Персиковый" = "Персиковый";
++"Печать" = "Печать";
++"Пиши… или нажми + слева" = "Пиши… или нажми + слева";
++"По умолчанию - для новых заметок и иконки в Dock. «Ко всем» - перекрасит и уже созданные." = "По умолчанию - для новых заметок и иконки в Dock. «Ко всем» - перекрасит и уже созданные.";
++"Поверх всех окон" = "Поверх всех окон";
++"Подзаголовок" = "Подзаголовок";
++"Подчёркивать слова с ошибками" = "Подчёркивать слова с ошибками";
++"Подчёркнутый" = "Подчёркнутый";
++"Подчёркнутый  ⌘U" = "Подчёркнутый  ⌘U";
++"Поиск" = "Поиск";
++"Показать в Finder" = "Показать в Finder";
++"Показать панель справа" = "Показать панель справа";
++"Показать список" = "Показать список";
++"Показать список (⌘\\)" = "Показать список (⌘\\)";
++"Полночь" = "Полночь";
++"Поменьше" = "Поменьше";
++"Превратить в" = "Превратить в";
++"Предыдущая" = "Предыдущая";
++"Предыдущая, следующая" = "Предыдущая, следующая";
++"Применить" = "Применить";
++"Применить ко всем заметкам" = "Применить ко всем заметкам";
++"Применить этот стиль ко всем заметкам?" = "Применить этот стиль ко всем заметкам?";
++"Проверка орфографии" = "Проверка орфографии";
++"Простые" = "Простые";
++"Прячет текст под стрелку" = "Прячет текст под стрелку";
++"Пункт списка" = "Пункт списка";
++"Пункты по порядку" = "Пункты по порядку";
++"Пункты с точками" = "Пункты с точками";
++"Разделители" = "Разделители";
++"Разделитель" = "Разделитель";
++"Размер текста" = "Размер текста";
++"Размер текста: " = "Размер текста: ";
++"Распознавание не ответило" = "Распознавание не ответило";
++"Распознавание остановилось" = "Распознавание остановилось";
++"Рассвет" = "Рассвет";
++"Расставляю знаки…" = "Расставляю знаки…";
++"Резервные копии" = "Резервные копии";
++"Роза" = "Роза";
++"Розовый" = "Розовый";
++"С диска или перетащи файл" = "С диска или перетащи файл";
++"С засечками" = "С засечками";
++"С рамкой" = "С рамкой";
++"Сворачиваемый список" = "Сворачиваемый список";
++"Сделать стилем по умолчанию" = "Сделать стилем по умолчанию";
++"Сегодня, " = "Сегодня, ";
++"Сейчас" = "Сейчас";
++"Серый" = "Серый";
++"Синий" = "Синий";
++"Сияние" = "Сияние";
++"Скопировано" = "Скопировано";
++"Скопировать" = "Скопировать";
++"Скопировать заметку" = "Скопировать заметку";
++"Скрыть панель справа" = "Скрыть панель справа";
++"Скрыть список" = "Скрыть список";
++"Сланец" = "Сланец";
++"Следующая" = "Следующая";
++"Слива" = "Слива";
++"Сменить…" = "Сменить…";
++"Сначала запустите FlowLocal - он поставит распознавание" = "Сначала запустите FlowLocal - он поставит распознавание";
++"Сначала запустите FlowLocal - он скачает модели" = "Сначала запустите FlowLocal - он скачает модели";
++"Совсем небольшой" = "Совсем небольшой";
++"Сохранено заметок: %ld" = "Сохранено заметок: %ld";
++"Сохранить все заметки в Markdown…" = "Сохранить все заметки в Markdown…";
++"Сохранить сюда" = "Сохранить сюда";
++"Список" = "Список";
++"Список заметок" = "Список заметок";
++"Список, нумерованный" = "Список, нумерованный";
++"Спрятать список (⌘\\)" = "Спрятать список (⌘\\)";
++"Стиль" = "Стиль";
++"Стиль применён ко всем %ld заметкам" = "Стиль применён ко всем %ld заметкам";
++"Стиль страниц" = "Стиль страниц";
++"Стиль страницы" = "Стиль страницы";
++"Страница" = "Страница";
++"Страница внутри" = "Страница внутри";
++"Страница удалена" = "Страница удалена";
++"Строки и столбцы" = "Строки и столбцы";
++"Т9" = "Т9";
++"ТЕКСТ" = "ТЕКСТ";
++"Таблица" = "Таблица";
++"Текст" = "Текст";
++"Текст (.txt)" = "Текст (.txt)";
++"Текст и печать" = "Текст и печать";
++"Тип строки  ↑↓ ↵" = "Тип строки  ↑↓ ↵";
++"Тире" = "Тире";
++"Тире и кавычки" = "Тире и кавычки";
++"Точка" = "Точка";
++"Точки" = "Точки";
++"Убрать" = "Убрать";
++"Удалить" = "Удалить";
++"Удалить заметку" = "Удалить заметку";
++"Файл" = "Файл";
++"Файл не найден" = "Файл не найден";
++"Файлы" = "Файлы";
++"Фиолетовый" = "Фиолетовый";
++"Фон" = "Фон";
++"Формат" = "Формат";
++"Цвет текста" = "Цвет текста";
++"Цвет текста и маркера" = "Цвет текста и маркера";
++"Цитата" = "Цитата";
++"Чеклист" = "Чеклист";
++"Чернила" = "Чернила";
++"Ширина страницы" = "Ширина страницы";
++"Широкая" = "Широкая";
++"Шрифт" = "Шрифт";
++"Шрифт, фон и цвета меняются в «Аа» сверху справа. Там же - стиль по умолчанию и «ко всем заметкам»." = "Шрифт, фон и цвета меняются в «Аа» сверху справа. Там же - стиль по умолчанию и «ко всем заметкам».";
++"Шрифт, фон, обложка и цвета у всех страниц станут как у этой." = "Шрифт, фон, обложка и цвета у всех страниц станут как у этой.";
++"Экспорт" = "Экспорт";
++"Это стиль по умолчанию" = "Это стиль по умолчанию";
++"Яркие" = "Яркие";
++"заметка" = "заметка";
++"заметки" = "заметки";
++"заметок" = "заметок";
++"нет входа звука" = "нет входа звука";
++"слов" = "слов";
++"слова" = "слова";
++"слово" = "слово";
++"− столбец" = "− столбец";
++"− строка" = "− строка";
++"Аа" = "Аа";
++"А" = "А";
++"Язык" = "Язык";
++"Язык интерфейса. Применится после перезапуска." = "Язык интерфейса. Применится после перезапуска.";
++"Как в системе" = "Как в системе";
++"Перезапустить, чтобы применить" = "Перезапустить, чтобы применить";
+diff --git a/Sources/Zametki/CodeHighlight.swift b/Sources/Zametki/CodeHighlight.swift
+index 53be497..ec3a3f9 100644
+--- a/Sources/Zametki/CodeHighlight.swift
++++ b/Sources/Zametki/CodeHighlight.swift
+@@ -23,7 +23,7 @@ enum CodeLanguage: String, CaseIterable {
+         case .cpp: "C++"
+         case .ruby: "Ruby"
+         case .php: "PHP"
+-        case .plain: "Текст"
++        case .plain: L("Текст")
+         }
+     }
+ 
+diff --git a/Sources/Zametki/Dictation.swift b/Sources/Zametki/Dictation.swift
+index 24ff487..bab650b 100644
+--- a/Sources/Zametki/Dictation.swift
++++ b/Sources/Zametki/Dictation.swift
+@@ -60,11 +60,11 @@ final class Dictation {
+         case .authorized: break
+         case .notDetermined:
+             AVCaptureDevice.requestAccess(for: .audio) { ok in
+-                DispatchQueue.main.async { ok ? self.start() : self.fail("Нет доступа к микрофону") }
++                DispatchQueue.main.async { ok ? self.start() : self.fail(L("Нет доступа к микрофону")) }
+             }
+             return
+         default:
+-            fail("Нет доступа к микрофону: Системные настройки → Конфиденциальность → Микрофон")
++            fail(L("Нет доступа к микрофону: Системные настройки → Конфиденциальность → Микрофон"))
+             return
+         }
+ 
+@@ -80,7 +80,7 @@ final class Dictation {
+         do {
+             try mic.start()
+         } catch {
+-            fail("Микрофон не запустился: \(error.localizedDescription)")
++            fail(String(format: L("Микрофон не запустился: %@"), error.localizedDescription))
+             return
+         }
+         state = .listening
+@@ -205,7 +205,7 @@ final class Dictation {
+                 mic.stop()
+                 stopWatchingEscape()
+                 onCancel?()
+-                fail("Распознавание остановилось")
++                fail(L("Распознавание остановилось"))
+             }
+         }
+     }
+@@ -246,13 +246,13 @@ final class FlowBackend {
+     /// Чего не хватает для диктовки, или nil, если всё на месте.
+     static func missing() -> String? {
+         guard let server, FileManager.default.fileExists(atPath: server.path) else {
+-            return "Для голосового ввода нужен FlowLocal"
++            return L("Для голосового ввода нужен FlowLocal")
+         }
+         guard FileManager.default.isExecutableFile(atPath: python.path) else {
+-            return "Сначала запустите FlowLocal - он поставит распознавание"
++            return L("Сначала запустите FlowLocal - он поставит распознавание")
+         }
+         guard FileManager.default.fileExists(atPath: models.appendingPathComponent("gigaam-v3-e2e-rnnt-int8").path) else {
+-            return "Сначала запустите FlowLocal - он скачает модели"
++            return L("Сначала запустите FlowLocal - он скачает модели")
+         }
+         return nil
+     }
+@@ -286,7 +286,7 @@ final class FlowBackend {
+         do {
+             try p.run()
+         } catch {
+-            emit(.failed("Не запустилось распознавание: \(error.localizedDescription)"))
++            emit(.failed(String(format: L("Не запустилось распознавание: %@"), error.localizedDescription)))
+             return
+         }
+         process = p
+@@ -316,7 +316,7 @@ final class FlowBackend {
+         queue.async {
+             self.pending[id] = completion
+             self.write(self.header(["cmd": "finish", "id": id]))
+-            self.queue.asyncAfter(deadline: .now() + timeout) { self.fail(id, "Распознавание не ответило") }
++            self.queue.asyncAfter(deadline: .now() + timeout) { self.fail(id, L("Распознавание не ответило")) }
+         }
+     }
+ 
+@@ -351,7 +351,7 @@ final class FlowBackend {
+                     // Первым грузится русская модель - с ней уже можно работать.
+                     DispatchQueue.main.async { self.isReady = true }
+                     emit(.ready)
+-                case "error": emit(.failed(obj["message"] as? String ?? "Ошибка распознавания"))
++                case "error": emit(.failed(obj["message"] as? String ?? L("Ошибка распознавания")))
+                 case "partial":
+                     emit(.partial(id: obj["id"] as? Int ?? -1, text: obj["text"] as? String ?? "",
+                                   interim: obj["interim"] as? String ?? ""))
+@@ -377,7 +377,7 @@ final class FlowBackend {
+         buffer.removeAll()
+         let waiting = pending
+         pending.removeAll()
+-        let error = NSError(domain: "Zametki", code: 3, userInfo: [NSLocalizedDescriptionKey: "Распознавание остановилось"])
++        let error = NSError(domain: "Zametki", code: 3, userInfo: [NSLocalizedDescriptionKey: L("Распознавание остановилось")])
+         for cb in waiting.values { DispatchQueue.main.async { cb(.failure(error)) } }
+         DispatchQueue.main.async { self.isReady = false }
+         emit(.exited)
+@@ -405,7 +405,7 @@ final class MicRecorder {
+         let input = engine.inputNode
+         let format = input.outputFormat(forBus: 0)
+         guard format.sampleRate > 0, let converter = AVAudioConverter(from: format, to: target) else {
+-            throw NSError(domain: "Zametki", code: 4, userInfo: [NSLocalizedDescriptionKey: "нет входа звука"])
++            throw NSError(domain: "Zametki", code: 4, userInfo: [NSLocalizedDescriptionKey: L("нет входа звука")])
+         }
+         pending.removeAll()
+         input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
+diff --git a/Sources/Zametki/Editor.swift b/Sources/Zametki/Editor.swift
+index cdba551..940997e 100644
+--- a/Sources/Zametki/Editor.swift
++++ b/Sources/Zametki/Editor.swift
+@@ -1375,14 +1375,14 @@ final class NotesTextView: NSTextView {
+         }
+         guard line.height > 0 else { return }
+         let hint: String = switch block {
+-        case .text: ns.length == 0 ? "Пиши… или нажми + слева" : "Нажми + или напиши /"
++        case .text: ns.length == 0 ? L("Пиши… или нажми + слева") : L("Нажми + или напиши /")
+         case .title, .heading, .subheading: block.name
+-        case .bullet, .numbered: "Пункт списка"
+-        case .todo, .done: "Задача"
+-        case .quote: "Цитата"
+-        case .toggle: "Сворачиваемый список"
+-        case .toggleItem: "Внутри списка"
+-        case .code: "Код"
++        case .bullet, .numbered: L("Пункт списка")
++        case .todo, .done: L("Задача")
++        case .quote: L("Цитата")
++        case .toggle: L("Сворачиваемый список")
++        case .toggleItem: L("Внутри списка")
++        case .code: L("Код")
+         case .page, .divider, .image, .file, .table: ""
+         }
+         var hintAttrs = Formatting.visual(attrs)
+@@ -1473,11 +1473,11 @@ final class NotesTextView: NSTextView {
+             let header = NSRect(x: rect.minX, y: rect.minY, width: rect.width, height: 30)
+             let language = range.length > 0 ? Formatting.language(of: range, in: storage) : .plain
+             let manual = range.length > 0 && storage.attribute(.zLang, at: range.location, effectiveRange: nil) != nil
+-            let label = (manual ? "" : "Авто · ") + language.name + "  ▾"
++            let label = (manual ? "" : L("Авто · ")) + language.name + "  ▾"
+             let small: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11, weight: .semibold),
+                                                          .foregroundColor: Style.text.withAlphaComponent(0.55)]
+             let languageSize = (label as NSString).size(withAttributes: small)
+-            let copyText = copiedBox == index ? "Скопировано" : "Скопировать"
++            let copyText = copiedBox == index ? L("Скопировано") : L("Скопировать")
+             let copySize = (copyText as NSString).size(withAttributes: small)
+             let copyRect = NSRect(x: header.maxX - copySize.width - 14, y: header.midY - copySize.height / 2, width: copySize.width, height: copySize.height)
+             let languageRect = NSRect(x: copyRect.minX - languageSize.width - 18, y: copyRect.minY, width: languageSize.width, height: languageSize.height)
+@@ -1493,7 +1493,7 @@ final class NotesTextView: NSTextView {
+             // Шапка отделена тонкой линией.
+             Style.text.withAlphaComponent(0.08).setFill()
+             NSRect(x: rect.minX + 1, y: header.maxY, width: rect.width - 2, height: 1).fill()
+-            NSAttributedString(string: "КОД", attributes: small).draw(at: NSPoint(x: rect.minX + 14, y: languageRect.minY))
++            NSAttributedString(string: L("КОД"), attributes: small).draw(at: NSPoint(x: rect.minX + 14, y: languageRect.minY))
+             NSAttributedString(string: label, attributes: small).draw(at: languageRect.origin)
+             NSAttributedString(string: copyText, attributes: small).draw(at: copyRect.origin)
+         }
+@@ -1517,7 +1517,7 @@ final class NotesTextView: NSTextView {
+             return true
+         }
+         let menu = NSMenu()
+-        let auto = NSMenuItem(title: "Авто", action: #selector(pickLanguage(_:)), keyEquivalent: "")
++        let auto = NSMenuItem(title: L("Авто"), action: #selector(pickLanguage(_:)), keyEquivalent: "")
+         auto.target = self
+         auto.representedObject = ["range": NSValue(range: box.range)] as [String: Any]
+         menu.addItem(auto)
+diff --git a/Sources/Zametki/FormatBar.swift b/Sources/Zametki/FormatBar.swift
+index d0f2fdf..02c6356 100644
+--- a/Sources/Zametki/FormatBar.swift
++++ b/Sources/Zametki/FormatBar.swift
+@@ -46,16 +46,16 @@ struct FormatBar: View {
+ 
+     private var row: some View {
+         HStack(spacing: 1) {
+-            toggle(.bold, "bold", "Жирный  ⌘B")
+-            toggle(.italic, "italic", "Курсив  ⌘I")
+-            toggle(.underline, "underline", "Подчёркнутый  ⌘U")
+-            toggle(.strike, "strikethrough", "Зачёркнутый  ⇧⌘X")
+-            toggle(.highlight, "highlighter", "Маркер  ⇧⌘M")
++            toggle(.bold, "bold", L("Жирный  ⌘B"))
++            toggle(.italic, "italic", L("Курсив  ⌘I"))
++            toggle(.underline, "underline", L("Подчёркнутый  ⌘U"))
++            toggle(.strike, "strikethrough", L("Зачёркнутый  ⇧⌘X"))
++            toggle(.highlight, "highlighter", L("Маркер  ⇧⌘M"))
+             separator
+ 
+             Button { setMode(mode == .colors ? .main : .colors) } label: {
+                 HStack(spacing: 4) {
+-                    Text("А")
++                    Text(L("А"))
+                         .font(.system(size: 14, weight: .semibold))
+                         .foregroundStyle(Color(nsColor: state.color.color))
+                         .padding(.horizontal, 3)
+@@ -70,7 +70,7 @@ struct FormatBar: View {
+                 .contentShape(Rectangle())
+             }
+             .buttonStyle(.plain)
+-            .help("Цвет текста и маркера")
++            .help(L("Цвет текста и маркера"))
+         }
+         .padding(5)
+         .frame(height: Self.rowHeight)
+@@ -92,7 +92,7 @@ struct FormatBar: View {
+ 
+     private var blocksMenu: some View {
+         VStack(alignment: .leading, spacing: 1) {
+-            Text(mode == .slash ? "Тип строки  ↑↓ ↵" : "Превратить в")
++            Text(mode == .slash ? L("Тип строки  ↑↓ ↵") : L("Превратить в"))
+                 .font(.system(size: 11, weight: .semibold))
+                 .opacity(0.45)
+                 .padding(.horizontal, 10)
+@@ -125,7 +125,7 @@ struct FormatBar: View {
+                 VStack(alignment: .leading, spacing: 1) {
+                     ForEach(Array(blocks.enumerated()), id: \.element) { index, block in
+                         if (index == 0 && !block.isObject) || index == firstObject {
+-                            Text(block.isObject ? "ВСТАВИТЬ" : "БАЗОВЫЕ")
++                            Text(block.isObject ? L("ВСТАВИТЬ") : L("БАЗОВЫЕ"))
+                                 .font(.system(size: 10.5, weight: .semibold))
+                                 .opacity(0.45)
+                                 .padding(.horizontal, 9)
+@@ -159,13 +159,13 @@ struct FormatBar: View {
+ 
+     private var colorsMenu: some View {
+         VStack(alignment: .leading, spacing: 8) {
+-            Text("Цвет текста")
++            Text(L("Цвет текста"))
+                 .font(.system(size: 11, weight: .semibold))
+                 .opacity(0.45)
+             LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6), count: 5), spacing: 6) {
+                 ForEach(TextColor.allCases, id: \.self) { color in
+                     Button { run(.color(color)) } label: {
+-                        Text("А")
++                        Text(L("А"))
+                             .font(.system(size: 14, weight: .bold))
+                             .foregroundStyle(Color(nsColor: color.color))
+                             .frame(width: 30, height: 30)
+@@ -178,7 +178,7 @@ struct FormatBar: View {
+                     .accessibilityLabel(color.name)
+                 }
+             }
+-            Text("Маркер")
++            Text(L("Маркер"))
+                 .font(.system(size: 11, weight: .semibold))
+                 .opacity(0.45)
+                 .padding(.top, 4)
+@@ -194,11 +194,11 @@ struct FormatBar: View {
+                         .contentShape(Rectangle())
+                 }
+                 .buttonStyle(.plain)
+-                .help("Без маркера")
+-                .accessibilityLabel("Без маркера")
++                .help(L("Без маркера"))
++                .accessibilityLabel(L("Без маркера"))
+                 ForEach(MarkColor.allCases, id: \.self) { mark in
+                     Button { run(.mark(mark)) } label: {
+-                        Text("А")
++                        Text(L("А"))
+                             .font(.system(size: 14, weight: .bold))
+                             .foregroundStyle(Color(nsColor: state.color.color))
+                             .frame(width: 30, height: 30)
+@@ -207,8 +207,8 @@ struct FormatBar: View {
+                             .contentShape(Rectangle())
+                     }
+                     .buttonStyle(.plain)
+-                    .help("Маркер: " + mark.name.lowercased())
+-                    .accessibilityLabel("Маркер: " + mark.name.lowercased())
++                    .help(L("Маркер: ") + mark.name.lowercased())
++                    .accessibilityLabel(L("Маркер: ") + mark.name.lowercased())
+                 }
+             }
+         }
+diff --git a/Sources/Zametki/Formatting.swift b/Sources/Zametki/Formatting.swift
+index 1215ab3..8a17be2 100644
+--- a/Sources/Zametki/Formatting.swift
++++ b/Sources/Zametki/Formatting.swift
+@@ -41,22 +41,22 @@ enum Block: String, CaseIterable {
+ 
+     var name: String {
+         switch self {
+-        case .text: "Текст"
+-        case .title: "Заголовок"
+-        case .heading: "Подзаголовок"
+-        case .subheading: "Маленький заголовок"
+-        case .bullet: "Список"
+-        case .numbered: "Нумерованный список"
+-        case .todo, .done: "Чеклист"
+-        case .toggle: "Сворачиваемый список"
+-        case .toggleItem: "Внутри сворачиваемого"
+-        case .quote: "Цитата"
+-        case .code: "Код"
+-        case .page: "Страница"
+-        case .divider: "Разделитель"
+-        case .image: "Картинка"
+-        case .file: "Файл"
+-        case .table: "Таблица"
++        case .text: L("Текст")
++        case .title: L("Заголовок")
++        case .heading: L("Подзаголовок")
++        case .subheading: L("Маленький заголовок")
++        case .bullet: L("Список")
++        case .numbered: L("Нумерованный список")
++        case .todo, .done: L("Чеклист")
++        case .toggle: L("Сворачиваемый список")
++        case .toggleItem: L("Внутри сворачиваемого")
++        case .quote: L("Цитата")
++        case .code: L("Код")
++        case .page: L("Страница")
++        case .divider: L("Разделитель")
++        case .image: L("Картинка")
++        case .file: L("Файл")
++        case .table: L("Таблица")
+         }
+     }
+ 
+@@ -128,14 +128,14 @@ enum MarkColor: String, CaseIterable {
+ 
+     var name: String {
+         switch self {
+-        case .yellow: "Жёлтый"
+-        case .green: "Зелёный"
+-        case .blue: "Синий"
+-        case .pink: "Розовый"
+-        case .purple: "Фиолетовый"
+-        case .orange: "Оранжевый"
+-        case .red: "Красный"
+-        case .gray: "Серый"
++        case .yellow: L("Жёлтый")
++        case .green: L("Зелёный")
++        case .blue: L("Синий")
++        case .pink: L("Розовый")
++        case .purple: L("Фиолетовый")
++        case .orange: L("Оранжевый")
++        case .red: L("Красный")
++        case .gray: L("Серый")
+         }
+     }
+ 
+@@ -165,19 +165,19 @@ enum TextColor: String, CaseIterable, Codable {
+ 
+     var name: String {
+         switch self {
+-        case .white: "Белый"
+-        case .yellow: "Жёлтый"
+-        case .pink: "Розовый"
+-        case .green: "Зелёный"
+-        case .sky: "Голубой"
+-        case .gray: "Серый"
+-        case .orange: "Оранжевый"
+-        case .lavender: "Лавандовый"
+-        case .mint: "Мятный"
+-        case .peach: "Персиковый"
+-        case .lemon: "Лимонный"
+-        case .coral: "Коралловый"
+-        case .blue: "Синий"
++        case .white: L("Белый")
++        case .yellow: L("Жёлтый")
++        case .pink: L("Розовый")
++        case .green: L("Зелёный")
++        case .sky: L("Голубой")
++        case .gray: L("Серый")
++        case .orange: L("Оранжевый")
++        case .lavender: L("Лавандовый")
++        case .mint: L("Мятный")
++        case .peach: L("Персиковый")
++        case .lemon: L("Лимонный")
++        case .coral: L("Коралловый")
++        case .blue: L("Синий")
+         }
+     }
+ 
+diff --git a/Sources/Zametki/Inspector.swift b/Sources/Zametki/Inspector.swift
+index ce2e674..9492b6e 100644
+--- a/Sources/Zametki/Inspector.swift
++++ b/Sources/Zametki/Inspector.swift
+@@ -10,8 +10,8 @@ struct Inspector: View {
+     var body: some View {
+         VStack(spacing: 0) {
+             HStack(spacing: 2) {
+-                tabButton("insert", "Блоки", "square.stack")
+-                tabButton("style", "Стиль", "paintbrush")
++                tabButton("insert", L("Блоки"), "square.stack")
++                tabButton("style", L("Стиль"), "paintbrush")
+             }
+             .padding(3)
+             .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(.black.opacity(0.2)))
+@@ -57,21 +57,21 @@ struct Inspector: View {
+ extension Block {
+     var hint: String {
+         switch self {
+-        case .text: "Обычный текст"
+-        case .title: "Большой, для раздела"
+-        case .heading: "Поменьше"
+-        case .subheading: "Совсем небольшой"
+-        case .bullet: "Пункты с точками"
+-        case .numbered: "Пункты по порядку"
+-        case .todo, .done: "Задачи с галочками"
+-        case .toggle, .toggleItem: "Прячет текст под стрелку"
+-        case .quote: "Выделенная мысль"
+-        case .code: "Моноширинный, на подложке"
+-        case .image: "С диска или перетащи файл"
+-        case .file: "Любой файл, лежит рядом"
+-        case .table: "Строки и столбцы"
+-        case .divider: "Линия, точки или лента"
+-        case .page: "Карточка вложенной страницы"
++        case .text: L("Обычный текст")
++        case .title: L("Большой, для раздела")
++        case .heading: L("Поменьше")
++        case .subheading: L("Совсем небольшой")
++        case .bullet: L("Пункты с точками")
++        case .numbered: L("Пункты по порядку")
++        case .todo, .done: L("Задачи с галочками")
++        case .toggle, .toggleItem: L("Прячет текст под стрелку")
++        case .quote: L("Выделенная мысль")
++        case .code: L("Моноширинный, на подложке")
++        case .image: L("С диска или перетащи файл")
++        case .file: L("Любой файл, лежит рядом")
++        case .table: L("Строки и столбцы")
++        case .divider: L("Линия, точки или лента")
++        case .page: L("Карточка вложенной страницы")
+         }
+     }
+ 
+@@ -99,9 +99,9 @@ extension Block {
+ private struct InsertTab: View {
+     var body: some View {
+         VStack(alignment: .leading, spacing: 2) {
+-            SectionTitle("ТЕКСТ").padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
++            SectionTitle(L("ТЕКСТ")).padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
+             ForEach(Block.basic, id: \.self) { BlockRow(block: $0) }
+-            SectionTitle("ПРЕДМЕТЫ").padding(.horizontal, 8).padding(.top, 12).padding(.bottom, 4)
++            SectionTitle(L("ПРЕДМЕТЫ")).padding(.horizontal, 8).padding(.top, 12).padding(.bottom, 4)
+             ForEach(Block.objects, id: \.self) { BlockRow(block: $0) }
+         }
+     }
+@@ -149,7 +149,7 @@ private struct BlockRow: View {
+             .padding(.vertical, 8)
+             .background(RoundedRectangle(cornerRadius: 9).fill(Color(nsColor: PageStyle.current.panelColor)))
+         }
+-        .help(block.shortcut.map { "\(block.name) - или напечатай «\($0) » в начале строки" } ?? block.name)
++        .help(block.shortcut.map { String(format: L("%@ - или напечатай «%@ » в начале строки"), block.name, $0) } ?? block.name)
+     }
+ }
+ 
+@@ -163,7 +163,7 @@ struct BlockIcon: View {
+             case .title: Text("H").font(.system(size: 13, weight: .bold))
+             case .heading: Text("H2").font(.system(size: 10.5, weight: .bold))
+             case .subheading: Text("H3").font(.system(size: 10, weight: .bold))
+-            case .text: Text("Аа").font(.system(size: 11.5, weight: .semibold))
++            case .text: Text(L("Аа")).font(.system(size: 11.5, weight: .semibold))
+             default: Image(systemName: block.symbol).font(.system(size: 12.5, weight: .medium))
+             }
+         }
+@@ -195,11 +195,11 @@ struct StylePanel: View {
+ 
+     var body: some View {
+         VStack(alignment: .leading, spacing: 20) {
+-            group("Шрифт") {
++            group(L("Шрифт")) {
+                 HStack(spacing: 6) {
+                     ForEach(PageStyle.Font.allCases, id: \.self) { font in
+                         Choice(isOn: style.font == font, action: { change { $0.font = font } }) {
+-                            Text("Аа")
++                            Text(L("Аа"))
+                                 .font(Font(PageStyle(font: font).font(font == .hand ? 23 : 16, weight: 600)))
+                                 .frame(height: 40)
+                         }
+@@ -210,7 +210,7 @@ struct StylePanel: View {
+                     .transaction { $0.animation = nil } // без наплыва старой подписи на новую
+             }
+ 
+-            group("Ширина страницы") {
++            group(L("Ширина страницы")) {
+                 HStack(spacing: 6) {
+                     ForEach(PageStyle.Width.allCases, id: \.self) { width in
+                         Choice(isOn: style.width == width, action: { change { $0.width = width } }) {
+@@ -225,7 +225,7 @@ struct StylePanel: View {
+                 }
+             }
+ 
+-            group("Фон") {
++            group(L("Фон")) {
+                 // Цвета сеткой по 7 - ровные ряды без хвостов.
+                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(29), spacing: 7), count: 7), alignment: .leading, spacing: 7) {
+                     ForEach(PageStyle.colors, id: \.id) { item in
+@@ -241,7 +241,7 @@ struct StylePanel: View {
+                                                          startPoint: .top, endPoint: .bottom))
+                         } action: { change { $0.background = .gradient(item.id) } }
+                     }
+-                    Swatch(isOn: isImageBackground, help: "Картинка с размытием…") {
++                    Swatch(isOn: isImageBackground, help: L("Картинка с размытием…")) {
+                         Image(systemName: "photo").font(.system(size: 11, weight: .semibold))
+                             .frame(maxWidth: .infinity, maxHeight: .infinity)
+                             .background(Circle().fill(.white.opacity(0.1)))
+@@ -253,7 +253,7 @@ struct StylePanel: View {
+                 }
+             }
+ 
+-            group("Обложка") {
++            group(L("Обложка")) {
+                 if let cover = style.cover, let image = Assets.image(cover) {
+                     GeometryReader { geo in
+                         Image(nsImage: image)
+@@ -265,21 +265,21 @@ struct StylePanel: View {
+                     .frame(height: 64)
+                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                     HStack(spacing: 8) {
+-                        Text("Верх").font(.system(size: 10.5)).opacity(0.5)
++                        Text(L("Верх")).font(.system(size: 10.5)).opacity(0.5)
+                         Slider(value: Binding(get: { style.coverPosition }, set: { v in change { $0.coverPosition = v } }), in: 0...1)
+                             .controlSize(.mini)
+-                        Text("Низ").font(.system(size: 10.5)).opacity(0.5)
++                        Text(L("Низ")).font(.system(size: 10.5)).opacity(0.5)
+                     }
+                     HStack(spacing: 6) {
+-                        SmallButton(title: "Сменить…", symbol: "photo") { pickCover() }
+-                        SmallButton(title: "Убрать", symbol: "xmark") { change { $0.cover = nil } }
++                        SmallButton(title: L("Сменить…"), symbol: "photo") { pickCover() }
++                        SmallButton(title: L("Убрать"), symbol: "xmark") { change { $0.cover = nil } }
+                     }
+                 } else {
+-                    SmallButton(title: "Добавить обложку…", symbol: "photo.on.rectangle") { pickCover() }
++                    SmallButton(title: L("Добавить обложку…"), symbol: "photo.on.rectangle") { pickCover() }
+                 }
+             }
+ 
+-            group("Цвет текста") {
++            group(L("Цвет текста")) {
+                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(29), spacing: 7), count: 7), alignment: .leading, spacing: 7) {
+                     ForEach(TextColor.allCases, id: \.self) { color in
+                         Swatch(isOn: style.text == color, help: color.name) {
+@@ -289,7 +289,7 @@ struct StylePanel: View {
+                 }
+             }
+ 
+-            group("Маркер списка") {
++            group(L("Маркер списка")) {
+                 HStack(spacing: 6) {
+                     ForEach(PageStyle.Bullet.allCases, id: \.self) { bullet in
+                         Choice(isOn: style.bulletStyle == bullet, action: { change { $0.bullet = bullet } }) {
+@@ -307,7 +307,7 @@ struct StylePanel: View {
+                 }
+             }
+ 
+-            group("Разделители") {
++            group(L("Разделители")) {
+                 HStack(spacing: 6) {
+                     ForEach(PageStyle.Divider.allCases, id: \.self) { divider in
+                         Choice(isOn: style.divider == divider, action: { change { $0.divider = divider } }) {
+@@ -321,7 +321,7 @@ struct StylePanel: View {
+                 }
+             }
+ 
+-            group("Карточки страниц") {
++            group(L("Карточки страниц")) {
+                 HStack(spacing: 6) {
+                     ForEach(PageStyle.Card.allCases, id: \.self) { card in
+                         Choice(isOn: style.card == card, action: { change { $0.card = card } }) {
+@@ -370,11 +370,11 @@ private struct DefaultStyleRow: View {
+ 
+     var body: some View {
+         VStack(alignment: .leading, spacing: 6) {
+-            SectionTitle("ДЛЯ ВСЕХ ЗАМЕТОК")
++            SectionTitle(L("ДЛЯ ВСЕХ ЗАМЕТОК"))
+             if isDefault {
+                 HStack(spacing: 6) {
+                     Image(systemName: "checkmark.circle.fill").font(.system(size: 11, weight: .semibold))
+-                    Text(justSaved ? "Готово - это стиль по умолчанию" : "Это стиль по умолчанию")
++                    Text(justSaved ? L("Готово - это стиль по умолчанию") : L("Это стиль по умолчанию"))
+                         .font(.system(size: 12, weight: .medium))
+                 }
+                 .frame(maxWidth: .infinity)
+@@ -383,34 +383,34 @@ private struct DefaultStyleRow: View {
+                 .opacity(0.75)
+                 .transition(.opacity)
+             } else {
+-                SmallButton(title: "Сделать стилем по умолчанию", symbol: "star") {
++                SmallButton(title: L("Сделать стилем по умолчанию"), symbol: "star") {
+                     withAnimation(.smooth(duration: 0.25)) {
+                         style.makeDefault()
+                         saved = UserDefaults.standard.data(forKey: "defaultPageStyle")
+                         justSaved = true
+                     }
+-                    store.say("Новые заметки будут в этом стиле")
++                    store.say(L("Новые заметки будут в этом стиле"))
+                 }
+                 .transition(.opacity)
+             }
+-            SmallButton(title: allSame ? "Все заметки уже в этом стиле" : "Применить ко всем заметкам", symbol: "square.stack") {
++            SmallButton(title: allSame ? L("Все заметки уже в этом стиле") : L("Применить ко всем заметкам"), symbol: "square.stack") {
+                 confirmAll = true
+             }
+             .disabled(allSame)
+             .opacity(allSame ? 0.45 : 1)
+-            Text("По умолчанию - для новых заметок и иконки в Dock. «Ко всем» - перекрасит и уже созданные.")
++            Text(L("По умолчанию - для новых заметок и иконки в Dock. «Ко всем» - перекрасит и уже созданные."))
+                 .font(.system(size: 11))
+                 .opacity(0.45)
+                 .fixedSize(horizontal: false, vertical: true)
+         }
+-        .alert("Применить этот стиль ко всем заметкам?", isPresented: $confirmAll) {
+-            Button("Применить") {
++        .alert(L("Применить этот стиль ко всем заметкам?"), isPresented: $confirmAll) {
++            Button(L("Применить")) {
+                 store.setStyleForAll(style)
+-                store.say("Стиль применён ко всем \(store.notes.count) заметкам")
++                store.say(String(format: L("Стиль применён ко всем %ld заметкам"), store.notes.count))
+             }
+-            Button("Отмена", role: .cancel) {}
++            Button(L("Отмена"), role: .cancel) {}
+         } message: {
+-            Text("Шрифт, фон, обложка и цвета у всех страниц станут как у этой.")
++            Text(L("Шрифт, фон, обложка и цвета у всех страниц станут как у этой."))
+         }
+         .onChange(of: style) { _, _ in justSaved = false }
+     }
+diff --git a/Sources/Zametki/Layouts.swift b/Sources/Zametki/Layouts.swift
+index 1db2e33..ae83a00 100644
+--- a/Sources/Zametki/Layouts.swift
++++ b/Sources/Zametki/Layouts.swift
+@@ -12,9 +12,9 @@ enum UILayout: String, CaseIterable {
+ 
+     var name: String {
+         switch self {
+-        case .quiet: "A · Тихий"
++        case .quiet: L("A · Тихий")
+         case .craft: "B · Craft"
+-        case .notebook: "C · Тетрадь"
++        case .notebook: L("C · Тетрадь")
+         }
+     }
+ }
+@@ -49,8 +49,8 @@ struct QuietLayout: View {
+                 SidebarToggle(shown: $showList)
+                 Button { store.create() } label: { BarIcon(symbol: "plus") }
+                     .buttonStyle(.plain)
+-                    .accessibilityLabel("Новая заметка")
+-                    .help("Новая заметка (⌘N)")
++                    .accessibilityLabel(L("Новая заметка"))
++                    .help(L("Новая заметка (⌘N)"))
+                 MicButton()
+                 Breadcrumbs(store: store).padding(.leading, 8)
+             }
+@@ -87,11 +87,11 @@ struct CraftLayout: View {
+                     .frame(height: 52)
+                     .padding(.horizontal, 10)
+                     HStack {
+-                        SectionTitle("ЗАМЕТКИ")
++                        SectionTitle(L("ЗАМЕТКИ"))
+                         Spacer()
+                         Button { store.create() } label: { BarIcon(symbol: "plus") }
+                             .buttonStyle(.plain)
+-                            .help("Новая заметка (⌘N)")
++                            .help(L("Новая заметка (⌘N)"))
+                     }
+                     .padding(.leading, 18)
+                     .padding(.trailing, 8)
+@@ -173,7 +173,7 @@ struct NotebookLayout: View {
+                         .padding(.horizontal, 10)
+                         NoteList(store: store, variant: .quiet, topPadding: 2)
+                         Button { store.create() } label: {
+-                            Label("Новая заметка", systemImage: "plus")
++                            Label(L("Новая заметка"), systemImage: "plus")
+                                 .font(.system(size: 13, weight: .medium))
+                                 .frame(maxWidth: .infinity)
+                                 .frame(height: 34)
+@@ -203,13 +203,13 @@ struct NotebookToolbar: View {
+     var body: some View {
+         HStack(spacing: 3) {
+             Button { styleOpen.toggle() } label: {
+-                Text("Аа")
++                Text(L("Аа"))
+                     .font(.system(size: 13, weight: .bold))
+                     .frame(width: 40, height: 36)
+                     .background(Capsule().fill(.white.opacity(styleOpen ? 0.24 : 0.14)))
+             }
+             .buttonStyle(.plain)
+-            .help("Стиль страницы")
++            .help(L("Стиль страницы"))
+             .popover(isPresented: $styleOpen, arrowEdge: .top) {
+                 ScrollView { StylePanel(store: store).padding(16) }
+                     .frame(width: 300, height: 460)
+@@ -228,7 +228,7 @@ struct NotebookToolbar: View {
+                     .contentShape(Rectangle())
+             }
+             .buttonStyle(.plain)
+-            .help("Все блоки")
++            .help(L("Все блоки"))
+             divider
+             MicButton(prominent: true)
+         }
+@@ -280,8 +280,8 @@ struct SidebarToggle: View {
+             withAnimation(.smooth(duration: 0.3)) { shown.toggle() }
+         } label: { BarIcon(symbol: "sidebar.left", isOn: shown) }
+             .buttonStyle(.plain)
+-            .accessibilityLabel("Список заметок")
+-            .help(shown ? "Спрятать список (⌘\\)" : "Показать список (⌘\\)")
++            .accessibilityLabel(L("Список заметок"))
++            .help(shown ? L("Спрятать список (⌘\\)") : L("Показать список (⌘\\)"))
+     }
+ }
+ 
+@@ -293,8 +293,8 @@ struct InspectorToggle: View {
+             withAnimation(.smooth(duration: 0.3)) { shown.toggle() }
+         } label: { BarIcon(symbol: "sidebar.right", isOn: shown) }
+             .buttonStyle(.plain)
+-            .accessibilityLabel("Панель справа")
+-            .help("Блоки и стиль страницы (⌥⌘\\)")
++            .accessibilityLabel(L("Панель справа"))
++            .help(L("Блоки и стиль страницы (⌥⌘\\)"))
+     }
+ }
+ 
+@@ -306,7 +306,7 @@ struct StyleButton: View {
+ 
+     var body: some View {
+         Button { open.toggle() } label: {
+-            Text("Аа")
++            Text(L("Аа"))
+                 .font(.system(size: 12.5, weight: .semibold))
+                 .foregroundStyle(.white.opacity(open || hover ? 0.85 : 0.5))
+                 .frame(width: 30, height: 22)
+@@ -314,8 +314,8 @@ struct StyleButton: View {
+         }
+         .buttonStyle(.plain)
+         .onHover { hover = $0 }
+-        .accessibilityLabel("Стиль страницы")
+-        .help("Стиль страницы")
++        .accessibilityLabel(L("Стиль страницы"))
++        .help(L("Стиль страницы"))
+         .popover(isPresented: $open, arrowEdge: .bottom) {
+             ScrollView { StylePanel(store: store).padding(16) }
+                 .frame(width: 300, height: 430)
+@@ -332,13 +332,13 @@ struct SearchField: View {
+     var body: some View {
+         HStack(spacing: 7) {
+             Image(systemName: "magnifyingglass").font(.system(size: 11.5, weight: .semibold)).opacity(0.5)
+-            TextField("Поиск", text: $text)
++            TextField(L("Поиск"), text: $text)
+                 .textFieldStyle(.plain)
+                 .font(.system(size: 12.5))
+             if !text.isEmpty {
+                 Button { text = "" } label: { Image(systemName: "xmark.circle.fill").opacity(0.5) }
+                     .buttonStyle(.plain)
+-                    .accessibilityLabel("Очистить поиск")
++                    .accessibilityLabel(L("Очистить поиск"))
+             }
+         }
+         .padding(.horizontal, 10)
+diff --git a/Sources/Zametki/Localization.swift b/Sources/Zametki/Localization.swift
+new file mode 100644
+index 0000000..09a112e
+--- /dev/null
++++ b/Sources/Zametki/Localization.swift
+@@ -0,0 +1,37 @@
++import AppKit
++
++/// Локализация. Ключи - русские строки (язык разработки);
++/// переводы лежат в Resources/<язык>.lproj/Localizable.strings (ru, en).
++/// Язык выбирается в настройках («Как в системе», English, Русский) и применяется при запуске.
++enum Localization {
++    static let key = "appLanguage"          // "auto" | "en" | "ru"
++    static let available = ["en", "ru"]
++
++    /// Что было выбрано в настройках на момент запуска.
++    static let launchChoice: String = UserDefaults.standard.string(forKey: key) ?? "auto"
++
++    /// Язык интерфейса: явный выбор или, при «Как в системе», язык macOS из доступных (иначе English).
++    static let code: String = {
++        if available.contains(launchChoice) { return launchChoice }
++        if let system = Bundle.main.preferredLocalizations.first, available.contains(system) { return system }
++        return "en"
++    }()
++
++    static var isRussian: Bool { code == "ru" }
++
++    static let bundle: Bundle = Bundle.main.path(forResource: code, ofType: "lproj").flatMap { Bundle(path: $0) } ?? .main
++
++    /// Перезапуск приложения, чтобы новый язык подхватили все окна и меню.
++    static func relaunch() {
++        let task = Process()
++        task.executableURL = URL(fileURLWithPath: "/bin/sh")
++        task.arguments = ["-c", "sleep 0.6; open \"$0\"", Bundle.main.bundlePath]
++        try? task.run()
++        NSApp.terminate(nil)
++    }
++}
++
++/// Строка интерфейса на выбранном языке.
++func L(_ key: String) -> String {
++    Localization.bundle.localizedString(forKey: key, value: nil, table: nil)
++}
+diff --git a/Sources/Zametki/Objects.swift b/Sources/Zametki/Objects.swift
+index d5c585f..f26ed5a 100644
+--- a/Sources/Zametki/Objects.swift
++++ b/Sources/Zametki/Objects.swift
+@@ -144,7 +144,7 @@ final class ImageCell: NSTextAttachmentCell {
+         guard let image = Assets.image(name) else {
+             NSColor.white.withAlphaComponent(0.07).setFill()
+             shape.fill()
+-            NSAttributedString(string: "Картинка не найдена", attributes: [
++            NSAttributedString(string: L("Картинка не найдена"), attributes: [
+                 .font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.white.withAlphaComponent(0.5),
+             ]).draw(at: NSPoint(x: rect.minX + 16, y: rect.midY - 8))
+             return
+@@ -209,8 +209,8 @@ final class FileCell: NSTextAttachmentCell {
+             .font: NSFont.systemFont(ofSize: 13.5, weight: .medium), .foregroundColor: PageStyle.current.text.color, .paragraphStyle: paragraph,
+         ]).draw(in: NSRect(x: rect.minX + 52, y: rect.minY + 8, width: rect.width - 64, height: 18))
+         let bytes = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? nil
+-        let detail = bytes.map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "Файл не найден"
+-        NSAttributedString(string: detail + " · открыть", attributes: [
++        let detail = bytes.map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? L("Файл не найден")
++        NSAttributedString(string: detail + L(" · открыть"), attributes: [
+             .font: NSFont.systemFont(ofSize: 11.5), .foregroundColor: PageStyle.current.text.color.withAlphaComponent(0.55),
+         ]).draw(at: NSPoint(x: rect.minX + 52, y: rect.minY + 27))
+     }
+diff --git a/Sources/Zametki/PageCard.swift b/Sources/Zametki/PageCard.swift
+index 3e80c69..7318cef 100644
+--- a/Sources/Zametki/PageCard.swift
++++ b/Sources/Zametki/PageCard.swift
+@@ -42,7 +42,7 @@ final class PageCardCell: NSTextAttachmentCell {
+         card.stroke()
+ 
+         let note = AppDelegate.store?.note(pageID)
+-        let title = note?.title ?? "Страница удалена"
++        let title = note?.title ?? L("Страница удалена")
+         let preview = note?.preview ?? ""
+ 
+         // Значок страницы.
+diff --git a/Sources/Zametki/PageStyle.swift b/Sources/Zametki/PageStyle.swift
+index 265d120..e4ef3b2 100644
+--- a/Sources/Zametki/PageStyle.swift
++++ b/Sources/Zametki/PageStyle.swift
+@@ -9,18 +9,18 @@ struct PageStyle: Codable, Equatable {
+ 
+         var name: String {
+             switch self {
+-            case .hand: "От руки"
+-            case .system: "Обычный"
+-            case .serif: "С засечками"
+-            case .mono: "Моно"
+-            case .rounded: "Округлый"
++            case .hand: L("От руки")
++            case .system: L("Обычный")
++            case .serif: L("С засечками")
++            case .mono: L("Моно")
++            case .rounded: L("Округлый")
+             }
+         }
+     }
+ 
+     enum Width: String, Codable, CaseIterable {
+         case regular, wide
+-        var name: String { self == .regular ? "Обычная" : "Широкая" }
++        var name: String { self == .regular ? L("Обычная") : L("Широкая") }
+     }
+ 
+     enum Background: Codable, Equatable {
+@@ -33,9 +33,9 @@ struct PageStyle: Codable, Equatable {
+         case line, dots, washi
+         var name: String {
+             switch self {
+-            case .line: "Линия"
+-            case .dots: "Точки"
+-            case .washi: "Лента"
++            case .line: L("Линия")
++            case .dots: L("Точки")
++            case .washi: L("Лента")
+             }
+         }
+     }
+@@ -44,9 +44,9 @@ struct PageStyle: Codable, Equatable {
+         case plain, outline, filled
+         var name: String {
+             switch self {
+-            case .plain: "Простые"
+-            case .outline: "С рамкой"
+-            case .filled: "Яркие"
++            case .plain: L("Простые")
++            case .outline: L("С рамкой")
++            case .filled: L("Яркие")
+             }
+         }
+     }
+@@ -65,7 +65,7 @@ struct PageStyle: Codable, Equatable {
+ 
+     enum Bullet: String, Codable, CaseIterable {
+         case dot, dash
+-        var name: String { self == .dot ? "Точка" : "Тире" }
++        var name: String { self == .dot ? L("Точка") : L("Тире") }
+     }
+ 
+     var bulletStyle: Bullet { bullet ?? .dot }
+@@ -89,29 +89,29 @@ struct PageStyle: Codable, Equatable {
+     // MARK: цвета
+ 
+     static let colors: [(id: String, name: String, color: NSColor)] = [
+-        ("blue", "Синий", NSColor(srgbRed: 0x1D / 255.0, green: 0x35 / 255.0, blue: 0x94 / 255.0, alpha: 1)),
+-        ("navy", "Ночь", NSColor(srgbRed: 0.07, green: 0.10, blue: 0.27, alpha: 1)),
+-        ("violet", "Фиолетовый", NSColor(srgbRed: 0.27, green: 0.18, blue: 0.52, alpha: 1)),
+-        ("forest", "Лес", NSColor(srgbRed: 0.09, green: 0.27, blue: 0.22, alpha: 1)),
+-        ("wine", "Вино", NSColor(srgbRed: 0.33, green: 0.12, blue: 0.20, alpha: 1)),
+-        ("graphite", "Графит", NSColor(srgbRed: 0.15, green: 0.16, blue: 0.18, alpha: 1)),
+-        ("clay", "Глина", NSColor(srgbRed: 0.47, green: 0.24, blue: 0.16, alpha: 1)),
+-        ("teal", "Бирюза", NSColor(srgbRed: 0.04, green: 0.30, blue: 0.33, alpha: 1)),
+-        ("plum", "Слива", NSColor(srgbRed: 0.33, green: 0.13, blue: 0.38, alpha: 1)),
+-        ("rose", "Роза", NSColor(srgbRed: 0.47, green: 0.16, blue: 0.28, alpha: 1)),
+-        ("olive", "Олива", NSColor(srgbRed: 0.25, green: 0.27, blue: 0.12, alpha: 1)),
+-        ("slate", "Сланец", NSColor(srgbRed: 0.16, green: 0.22, blue: 0.31, alpha: 1)),
+-        ("cocoa", "Какао", NSColor(srgbRed: 0.27, green: 0.18, blue: 0.14, alpha: 1)),
+-        ("ink", "Чернила", NSColor(srgbRed: 0.06, green: 0.07, blue: 0.09, alpha: 1)),
++        ("blue", L("Синий"), NSColor(srgbRed: 0x1D / 255.0, green: 0x35 / 255.0, blue: 0x94 / 255.0, alpha: 1)),
++        ("navy", L("Ночь"), NSColor(srgbRed: 0.07, green: 0.10, blue: 0.27, alpha: 1)),
++        ("violet", L("Фиолетовый"), NSColor(srgbRed: 0.27, green: 0.18, blue: 0.52, alpha: 1)),
++        ("forest", L("Лес"), NSColor(srgbRed: 0.09, green: 0.27, blue: 0.22, alpha: 1)),
++        ("wine", L("Вино"), NSColor(srgbRed: 0.33, green: 0.12, blue: 0.20, alpha: 1)),
++        ("graphite", L("Графит"), NSColor(srgbRed: 0.15, green: 0.16, blue: 0.18, alpha: 1)),
++        ("clay", L("Глина"), NSColor(srgbRed: 0.47, green: 0.24, blue: 0.16, alpha: 1)),
++        ("teal", L("Бирюза"), NSColor(srgbRed: 0.04, green: 0.30, blue: 0.33, alpha: 1)),
++        ("plum", L("Слива"), NSColor(srgbRed: 0.33, green: 0.13, blue: 0.38, alpha: 1)),
++        ("rose", L("Роза"), NSColor(srgbRed: 0.47, green: 0.16, blue: 0.28, alpha: 1)),
++        ("olive", L("Олива"), NSColor(srgbRed: 0.25, green: 0.27, blue: 0.12, alpha: 1)),
++        ("slate", L("Сланец"), NSColor(srgbRed: 0.16, green: 0.22, blue: 0.31, alpha: 1)),
++        ("cocoa", L("Какао"), NSColor(srgbRed: 0.27, green: 0.18, blue: 0.14, alpha: 1)),
++        ("ink", L("Чернила"), NSColor(srgbRed: 0.06, green: 0.07, blue: 0.09, alpha: 1)),
+     ]
+ 
+     static let gradients: [(id: String, name: String, top: NSColor, bottom: NSColor)] = [
+-        ("ocean", "Океан", NSColor(srgbRed: 0.11, green: 0.21, blue: 0.58, alpha: 1), NSColor(srgbRed: 0.04, green: 0.42, blue: 0.52, alpha: 1)),
+-        ("sunset", "Закат", NSColor(srgbRed: 0.33, green: 0.16, blue: 0.55, alpha: 1), NSColor(srgbRed: 0.62, green: 0.22, blue: 0.33, alpha: 1)),
+-        ("night", "Полночь", NSColor(srgbRed: 0.10, green: 0.14, blue: 0.38, alpha: 1), NSColor(srgbRed: 0.03, green: 0.04, blue: 0.10, alpha: 1)),
+-        ("aurora", "Сияние", NSColor(srgbRed: 0.06, green: 0.33, blue: 0.30, alpha: 1), NSColor(srgbRed: 0.14, green: 0.18, blue: 0.52, alpha: 1)),
+-        ("dawn", "Рассвет", NSColor(srgbRed: 0.55, green: 0.28, blue: 0.18, alpha: 1), NSColor(srgbRed: 0.24, green: 0.14, blue: 0.42, alpha: 1)),
+-        ("lagoon", "Лагуна", NSColor(srgbRed: 0.03, green: 0.36, blue: 0.40, alpha: 1), NSColor(srgbRed: 0.05, green: 0.15, blue: 0.33, alpha: 1)),
++        ("ocean", L("Океан"), NSColor(srgbRed: 0.11, green: 0.21, blue: 0.58, alpha: 1), NSColor(srgbRed: 0.04, green: 0.42, blue: 0.52, alpha: 1)),
++        ("sunset", L("Закат"), NSColor(srgbRed: 0.33, green: 0.16, blue: 0.55, alpha: 1), NSColor(srgbRed: 0.62, green: 0.22, blue: 0.33, alpha: 1)),
++        ("night", L("Полночь"), NSColor(srgbRed: 0.10, green: 0.14, blue: 0.38, alpha: 1), NSColor(srgbRed: 0.03, green: 0.04, blue: 0.10, alpha: 1)),
++        ("aurora", L("Сияние"), NSColor(srgbRed: 0.06, green: 0.33, blue: 0.30, alpha: 1), NSColor(srgbRed: 0.14, green: 0.18, blue: 0.52, alpha: 1)),
++        ("dawn", L("Рассвет"), NSColor(srgbRed: 0.55, green: 0.28, blue: 0.18, alpha: 1), NSColor(srgbRed: 0.24, green: 0.14, blue: 0.42, alpha: 1)),
++        ("lagoon", L("Лагуна"), NSColor(srgbRed: 0.03, green: 0.36, blue: 0.40, alpha: 1), NSColor(srgbRed: 0.05, green: 0.15, blue: 0.33, alpha: 1)),
+     ]
+ 
+     /// Фон всплывающих панелей (стиль, настройки, панель над выделением) - темнее страницы, в её тон.
+diff --git a/Sources/Zametki/SettingsView.swift b/Sources/Zametki/SettingsView.swift
+index 3100645..5fa03d0 100644
+--- a/Sources/Zametki/SettingsView.swift
++++ b/Sources/Zametki/SettingsView.swift
+@@ -9,11 +9,11 @@ struct SettingsView: View {
+         var id: String { rawValue }
+         var name: String {
+             switch self {
+-            case .look: "Вид"
+-            case .typing: "Текст и печать"
+-            case .voice: "Голосовой ввод"
+-            case .data: "Данные"
+-            case .keys: "Горячие клавиши"
++            case .look: L("Вид")
++            case .typing: L("Текст и печать")
++            case .voice: L("Голосовой ввод")
++            case .data: L("Данные")
++            case .keys: L("Горячие клавиши")
+             }
+         }
+         var symbol: String {
+@@ -37,10 +37,13 @@ struct SettingsView: View {
+     @AppStorage("t9") private var t9 = true
+     @AppStorage("smartPunctuation") private var smartPunctuation = false
+     @AppStorage("floatOnTop") private var floatOnTop = false
++    @AppStorage(Localization.key) private var language = "auto"
+ 
+     private var section: Section { Section(rawValue: sectionRaw) ?? .look }
+ 
+-    private static let sizes: [(name: String, scale: Double)] = [("Мелкий", 0.88), ("Обычный", 1), ("Крупный", 1.15), ("Огромный", 1.3)]
++    private static let languages: [(code: String, name: String)] = [("auto", L("Как в системе")), ("en", "English"), ("ru", "Русский")]
++
++    private static let sizes: [(name: String, scale: Double)] = [(L("Мелкий"), 0.88), (L("Обычный"), 1), (L("Крупный"), 1.15), (L("Огромный"), 1.3)]
+ 
+     var body: some View {
+         HStack(spacing: 0) {
+@@ -73,8 +76,8 @@ struct SettingsView: View {
+                 }
+                 .buttonStyle(.plain)
+                 .keyboardShortcut(.cancelAction)
+-                .accessibilityLabel("Закрыть настройки")
+-                .help("Закрыть (Esc)")
++                .accessibilityLabel(L("Закрыть настройки"))
++                .help(L("Закрыть (Esc)"))
+                 .padding(14)
+             }
+         }
+@@ -93,7 +96,7 @@ struct SettingsView: View {
+ 
+     private var nav: some View {
+         VStack(alignment: .leading, spacing: 2) {
+-            Text("Настройки")
++            Text(L("Настройки"))
+                 .font(.system(size: 12, weight: .semibold))
+                 .opacity(0.45)
+                 .padding(.horizontal, 10)
+@@ -103,7 +106,7 @@ struct SettingsView: View {
+                 NavRow(title: item.name, symbol: item.symbol, isOn: item == section) { sectionRaw = item.rawValue }
+             }
+             Spacer()
+-            Text("Заметочки · всё хранится на этом Mac")
++            Text(L("Заметочки · всё хранится на этом Mac"))
+                 .font(.system(size: 10.5))
+                 .opacity(0.35)
+                 .padding(.horizontal, 10)
+@@ -121,7 +124,7 @@ struct SettingsView: View {
+     private var content: some View {
+         switch section {
+         case .look:
+-            SettingsGroup(title: "Интерфейс", note: "Кнопки, список и панели - по-разному; заметки и стили общие.") {
++            SettingsGroup(title: L("Интерфейс"), note: L("Кнопки, список и панели - по-разному; заметки и стили общие.")) {
+                 HStack(spacing: 10) {
+                     ForEach(UILayout.allCases, id: \.self) { option in
+                         LayoutChoice(option: option, isOn: layout == option.rawValue) {
+@@ -130,14 +133,26 @@ struct SettingsView: View {
+                     }
+                 }
+             }
+-            SettingsGroup(title: "Окно") {
++            SettingsGroup(title: L("Окно")) {
+                 Card {
+-                    SettingToggle(title: "Поверх всех окон", detail: "Заметки не прячутся за другими окнами", isOn: $floatOnTop)
++                    SettingToggle(title: L("Поверх всех окон"), detail: L("Заметки не прячутся за другими окнами"), isOn: $floatOnTop)
+                 }
+             }
+-            SettingsGroup(title: "Стиль страниц", note: "Шрифт, фон и цвета меняются в «Аа» сверху справа. Там же - стиль по умолчанию и «ко всем заметкам».") { EmptyView() }
++            SettingsGroup(title: L("Язык"), note: L("Язык интерфейса. Применится после перезапуска.")) {
++                HStack(spacing: 8) {
++                    ForEach(Self.languages, id: \.code) { item in
++                        LanguageChoice(name: item.name, isOn: language == item.code) { language = item.code }
++                    }
++                }
++                if language != Localization.launchChoice {
++                    Card {
++                        ActionRow(title: L("Перезапустить, чтобы применить"), symbol: "arrow.clockwise") { Localization.relaunch() }
++                    }
++                }
++            }
++            SettingsGroup(title: L("Стиль страниц"), note: L("Шрифт, фон и цвета меняются в «Аа» сверху справа. Там же - стиль по умолчанию и «ко всем заметкам».")) { EmptyView() }
+         case .typing:
+-            SettingsGroup(title: "Размер текста") {
++            SettingsGroup(title: L("Размер текста")) {
+                 HStack(spacing: 8) {
+                     ForEach(Self.sizes, id: \.scale) { size in
+                         SizeChoice(name: size.name, scale: size.scale, isOn: abs(textScale - size.scale) < 0.01) {
+@@ -146,30 +161,30 @@ struct SettingsView: View {
+                     }
+                 }
+             }
+-            SettingsGroup(title: "Печать") {
++            SettingsGroup(title: L("Печать")) {
+                 Card {
+-                    SettingToggle(title: "Звук печати", detail: "Мягкий щелчок на каждую клавишу", isOn: $typingSound)
++                    SettingToggle(title: L("Звук печати"), detail: L("Мягкий щелчок на каждую клавишу"), isOn: $typingSound)
+                     CardDivider()
+-                    SettingToggle(title: "Заглавные буквы сами", detail: "В начале строки и после точки", isOn: $autoCapitalize)
++                    SettingToggle(title: L("Заглавные буквы сами"), detail: L("В начале строки и после точки"), isOn: $autoCapitalize)
+                     CardDivider()
+-                    SettingToggle(title: "Т9", detail: "Исправляет опечатки и подсказывает конец слова - Tab, чтобы принять", isOn: $t9)
++                    SettingToggle(title: L("Т9"), detail: L("Исправляет опечатки и подсказывает конец слова - Tab, чтобы принять"), isOn: $t9)
+                     CardDivider()
+-                    SettingToggle(title: "Проверка орфографии", detail: "Подчёркивать слова с ошибками", isOn: $spellCheck)
++                    SettingToggle(title: L("Проверка орфографии"), detail: L("Подчёркивать слова с ошибками"), isOn: $spellCheck)
+                     CardDivider()
+-                    SettingToggle(title: "Тире и кавычки", detail: "«--» становится «—», кавычки - типографскими", isOn: $smartPunctuation)
++                    SettingToggle(title: L("Тире и кавычки"), detail: L("«--» становится «—», кавычки - типографскими"), isOn: $smartPunctuation)
+                 }
+             }
+         case .voice:
+-            SettingsGroup(title: "Движок") {
++            SettingsGroup(title: L("Движок")) {
+                 Card {
+                     HStack(spacing: 10) {
+                         Image(systemName: FlowBackend.missing() == nil ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                             .font(.system(size: 16))
+                             .opacity(0.85)
+                         VStack(alignment: .leading, spacing: 2) {
+-                            Text(FlowBackend.missing() == nil ? "Готов к работе" : "Не найден")
++                            Text(FlowBackend.missing() == nil ? L("Готов к работе") : L("Не найден"))
+                                 .font(.system(size: 13, weight: .medium))
+-                            Text(FlowBackend.missing() ?? "FlowLocal на этом Mac, без интернета")
++                            Text(FlowBackend.missing() ?? L("FlowLocal на этом Mac, без интернета"))
+                                 .font(.system(size: 11.5))
+                                 .opacity(0.5)
+                         }
+@@ -178,33 +193,33 @@ struct SettingsView: View {
+                     .padding(.vertical, 10)
+                 }
+             }
+-            SettingsGroup(title: "Как пользоваться") {
++            SettingsGroup(title: L("Как пользоваться")) {
+                 Card {
+-                    KeyRow(key: "⇧⌘D", title: "Начать и закончить")
++                    KeyRow(key: "⇧⌘D", title: L("Начать и закончить"))
+                     CardDivider()
+-                    KeyRow(key: "Esc", title: "Отменить")
++                    KeyRow(key: "Esc", title: L("Отменить"))
+                     CardDivider()
+-                    KeyRow(key: "🎙", title: "Или кнопка микрофона сверху")
++                    KeyRow(key: "🎙", title: L("Или кнопка микрофона сверху"))
+                 }
+             }
+         case .data:
+             if let store = AppDelegate.store {
+                 HStack(spacing: 10) {
+-                    Stat(value: "\(store.notes.count)", label: Self.plural(store.notes.count, "заметка", "заметки", "заметок"))
+-                    Stat(value: "\(Self.words(store))", label: Self.plural(Self.words(store), "слово", "слова", "слов"))
++                    Stat(value: "\(store.notes.count)", label: Self.plural(store.notes.count, L("заметка"), L("заметки"), L("заметок")))
++                    Stat(value: "\(Self.words(store))", label: Self.plural(Self.words(store), L("слово"), L("слова"), L("слов")))
+                 }
+-                SettingsGroup(title: "Файлы", note: "Перед тем как заметка сильно уменьшится, её прошлая версия кладётся в резервные копии.") {
++                SettingsGroup(title: L("Файлы"), note: L("Перед тем как заметка сильно уменьшится, её прошлая версия кладётся в резервные копии.")) {
+                     Card {
+-                        ActionRow(title: "Открыть папку заметок", symbol: "folder") { NSWorkspace.shared.open(store.folder) }
++                        ActionRow(title: L("Открыть папку заметок"), symbol: "folder") { NSWorkspace.shared.open(store.folder) }
+                         CardDivider()
+-                        ActionRow(title: "Резервные копии", symbol: "clock.arrow.circlepath") {
++                        ActionRow(title: L("Резервные копии"), symbol: "clock.arrow.circlepath") {
+                             let backups = store.folder.appendingPathComponent("Backups", isDirectory: true)
+                             try? FileManager.default.createDirectory(at: backups, withIntermediateDirectories: true)
+                             NSWorkspace.shared.open(backups)
+                         }
+                         CardDivider()
+-                        ActionRow(title: "Сохранить все заметки в Markdown…", symbol: "square.and.arrow.up") {
+-                            if let count = Transfer.exportAll(store) { store.say("Сохранено заметок: \(count)") }
++                        ActionRow(title: L("Сохранить все заметки в Markdown…"), symbol: "square.and.arrow.up") {
++                            if let count = Transfer.exportAll(store) { store.say(String(format: L("Сохранено заметок: %ld"), count)) }
+                         }
+                     }
+                 }
+@@ -220,20 +235,20 @@ struct SettingsView: View {
+     }
+ 
+     private static let keys: [(String, String)] = [
+-        ("⌘N", "Новая заметка"),
+-        ("/", "Меню блоков"),
+-        ("⌘B  ⌘I  ⌘U", "Жирный, курсив, подчёркнутый"),
+-        ("⇧⌘X", "Зачёркнутый"),
+-        ("⇧⌘M", "Маркер"),
+-        ("⌥⌘1  2  3", "Заголовки"),
+-        ("⇧⌘7  ⇧⌘9", "Список, нумерованный"),
+-        ("⇧⌘L", "Чеклист"),
+-        ("⌥⌘P", "Страница внутри"),
+-        ("⇧⌘D", "Голосовой ввод"),
+-        ("⌘\\", "Список заметок"),
+-        ("⌥⌘↑  ⌥⌘↓", "Предыдущая, следующая"),
+-        ("⇧⌘C", "Скопировать заметку"),
+-        ("⇧⌘⌫", "Удалить заметку"),
++        ("⌘N", L("Новая заметка")),
++        ("/", L("Меню блоков")),
++        ("⌘B  ⌘I  ⌘U", L("Жирный, курсив, подчёркнутый")),
++        ("⇧⌘X", L("Зачёркнутый")),
++        ("⇧⌘M", L("Маркер")),
++        ("⌥⌘1  2  3", L("Заголовки")),
++        ("⇧⌘7  ⇧⌘9", L("Список, нумерованный")),
++        ("⇧⌘L", L("Чеклист")),
++        ("⌥⌘P", L("Страница внутри")),
++        ("⇧⌘D", L("Голосовой ввод")),
++        ("⌘\\", L("Список заметок")),
++        ("⌥⌘↑  ⌥⌘↓", L("Предыдущая, следующая")),
++        ("⇧⌘C", L("Скопировать заметку")),
++        ("⇧⌘⌫", L("Удалить заметку")),
+     ]
+ 
+     private static func words(_ store: Store) -> Int {
+@@ -241,6 +256,7 @@ struct SettingsView: View {
+     }
+ 
+     private static func plural(_ n: Int, _ one: String, _ few: String, _ many: String) -> String {
++        if !Localization.isRussian { return n == 1 ? one : many }
+         let a = n % 100, b = n % 10
+         if (11...14).contains(a) { return many }
+         if b == 1 { return one }
+@@ -369,6 +385,27 @@ private struct Stat: View {
+     }
+ }
+ 
++private struct LanguageChoice: View {
++    let name: String
++    let isOn: Bool
++    let action: () -> Void
++    @State private var hover = false
++
++    var body: some View {
++        Button(action: action) {
++            Text(name).font(.system(size: 12, weight: .medium)).lineLimit(1).opacity(isOn ? 1 : 0.7)
++                .frame(maxWidth: .infinity)
++                .padding(.vertical, 12)
++                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.white.opacity(isOn ? 0.14 : hover ? 0.09 : 0.05)))
++                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.white.opacity(isOn ? 0.55 : 0.07), lineWidth: isOn ? 1.5 : 1))
++                .contentShape(Rectangle())
++        }
++        .buttonStyle(.plain)
++        .onHover { hover = $0 }
++        .accessibilityLabel(L("Язык") + ": " + name)
++    }
++}
++
+ private struct SizeChoice: View {
+     let name: String
+     let scale: Double
+@@ -379,7 +416,7 @@ private struct SizeChoice: View {
+     var body: some View {
+         Button(action: action) {
+             VStack(spacing: 4) {
+-                Text("Аа").font(.system(size: 10 + 8 * scale, weight: .semibold))
++                Text(L("Аа")).font(.system(size: 10 + 8 * scale, weight: .semibold))
+                     .frame(height: 26)
+                 Text(name).font(.system(size: 11, weight: .medium)).lineLimit(1).opacity(isOn ? 1 : 0.7)
+             }
+@@ -391,7 +428,7 @@ private struct SizeChoice: View {
+         }
+         .buttonStyle(.plain)
+         .onHover { hover = $0 }
+-        .accessibilityLabel("Размер текста: " + name)
++        .accessibilityLabel(L("Размер текста: ") + name)
+     }
+ }
+ 
+@@ -486,8 +523,8 @@ struct SettingsButton: View {
+     var body: some View {
+         Button { open.toggle() } label: { BarIcon(symbol: "gearshape", isOn: open) }
+             .buttonStyle(.plain)
+-            .accessibilityLabel("Настройки")
+-            .help("Настройки (⌘,)")
++            .accessibilityLabel(L("Настройки"))
++            .help(L("Настройки (⌘,)"))
+     }
+ }
+ 
+diff --git a/Sources/Zametki/Store.swift b/Sources/Zametki/Store.swift
+index 3c0efae..799f827 100644
+--- a/Sources/Zametki/Store.swift
++++ b/Sources/Zametki/Store.swift
+@@ -15,7 +15,7 @@ struct Note: Identifiable, Equatable {
+         let first = text.split(whereSeparator: \.isNewline)
+             .map { $0.replacingOccurrences(of: "\u{FFFC}", with: "").trimmingCharacters(in: .whitespaces) }
+             .first { !$0.isEmpty }
+-        return first ?? "Без названия"
++        return first ?? L("Без названия")
+     }
+ 
+     /// Первая строка после названия - для превью на карточке.
+@@ -103,7 +103,7 @@ final class Store {
+         guard let parent else { return true }
+         let below = id.map { subtreeHeight($0) } ?? 0
+         if depth(parent) + 1 + below <= Self.maxDepth { return true }
+-        say("Глубже \(Self.maxDepth) уровней вкладывать нельзя")
++        say(String(format: L("Глубже %ld уровней вкладывать нельзя"), Self.maxDepth))
+         return false
+     }
+ 
+diff --git a/Sources/Zametki/TableEditor.swift b/Sources/Zametki/TableEditor.swift
+index e703bff..756f3b1 100644
+--- a/Sources/Zametki/TableEditor.swift
++++ b/Sources/Zametki/TableEditor.swift
+@@ -25,14 +25,14 @@ private struct TableEditorView: View {
+ 
+     var body: some View {
+         VStack(alignment: .leading, spacing: 14) {
+-            Text("Таблица")
++            Text(L("Таблица"))
+                 .font(.system(size: 15, weight: .semibold))
+             ScrollView([.horizontal, .vertical]) {
+                 Grid(horizontalSpacing: 6, verticalSpacing: 6) {
+                     ForEach(table.cells.indices, id: \.self) { r in
+                         GridRow {
+                             ForEach(0..<table.columns, id: \.self) { c in
+-                                TextField(r == 0 ? "Заголовок" : "", text: binding(r, c))
++                                TextField(r == 0 ? L("Заголовок") : "", text: binding(r, c))
+                                     .textFieldStyle(.plain)
+                                     .font(.system(size: 13, weight: r == 0 ? .semibold : .regular))
+                                     .padding(.horizontal, 8)
+@@ -45,15 +45,15 @@ private struct TableEditorView: View {
+             }
+             .frame(minHeight: 120, maxHeight: 360)
+             HStack(spacing: 8) {
+-                Button("+ строка") { table.cells.append(Array(repeating: "", count: table.columns)) }
+-                Button("+ столбец") { for i in table.cells.indices { table.cells[i].append("") } }
+-                Button("− строка") { if table.rows > 1 { table.cells.removeLast() } }
+-                Button("− столбец") {
++                Button(L("+ строка")) { table.cells.append(Array(repeating: "", count: table.columns)) }
++                Button(L("+ столбец")) { for i in table.cells.indices { table.cells[i].append("") } }
++                Button(L("− строка")) { if table.rows > 1 { table.cells.removeLast() } }
++                Button(L("− столбец")) {
+                     if table.columns > 1 { for i in table.cells.indices where !table.cells[i].isEmpty { table.cells[i].removeLast() } }
+                 }
+                 Spacer()
+-                Button("Отмена") { close(nil) }.keyboardShortcut(.cancelAction)
+-                Button("Готово") { close(table) }.keyboardShortcut(.defaultAction)
++                Button(L("Отмена")) { close(nil) }.keyboardShortcut(.cancelAction)
++                Button(L("Готово")) { close(table) }.keyboardShortcut(.defaultAction)
+             }
+             .controlSize(.regular)
+         }
+diff --git a/Sources/Zametki/Transfer.swift b/Sources/Zametki/Transfer.swift
+index d289537..dc7af09 100644
+--- a/Sources/Zametki/Transfer.swift
++++ b/Sources/Zametki/Transfer.swift
+@@ -115,16 +115,16 @@ enum Transfer {
+         let attrs = storage.attributes(at: range.location, effectiveRange: nil)
+         switch block {
+         case .page:
+-            let title = AppDelegate.store?.note(attrs[.zPage] as? String)?.title ?? "Страница"
++            let title = AppDelegate.store?.note(attrs[.zPage] as? String)?.title ?? L("Страница")
+             return "📄 " + title
+         case .divider:
+             return markdown ? "---" : "———"
+         case .image:
+             let name = attrs[.zImage] as? String ?? ""
+-            return markdown ? "![](\(Assets.url(name).absoluteString))" : "[картинка: \(Assets.displayName(name))]"
++            return markdown ? "![](\(Assets.url(name).absoluteString))" : String(format: L("[картинка: %@]"), Assets.displayName(name))
+         case .file:
+             let name = attrs[.zFile] as? String ?? ""
+-            return markdown ? "[\(Assets.displayName(name))](\(Assets.url(name).absoluteString))" : "[файл: \(Assets.displayName(name))]"
++            return markdown ? "[\(Assets.displayName(name))](\(Assets.url(name).absoluteString))" : String(format: L("[файл: %@]"), Assets.displayName(name))
+         case .table:
+             let table = Table(json: attrs[.zTable] as? String ?? "")
+             var rows = table.cells.map { "| " + $0.joined(separator: " | ") + " |" }
+@@ -154,8 +154,8 @@ enum Transfer {
+         var name: String {
+             switch self {
+             case .markdown: "Markdown (.md)"
+-            case .text: "Текст (.txt)"
+-            case .rtf: "RTF (.rtf) - для Pages и Word"
++            case .text: L("Текст (.txt)")
++            case .rtf: L("RTF (.rtf) - для Pages и Word")
+             }
+         }
+ 
+@@ -193,16 +193,16 @@ enum Transfer {
+         panel.canChooseDirectories = true
+         panel.canChooseFiles = false
+         panel.canCreateDirectories = true
+-        panel.prompt = "Сохранить сюда"
+-        panel.message = "Куда сохранить все заметки (Markdown)"
++        panel.prompt = L("Сохранить сюда")
++        panel.message = L("Куда сохранить все заметки (Markdown)")
+         guard panel.runModal() == .OK, let base = panel.url else { return nil }
+-        let root = base.appendingPathComponent("Заметочки", isDirectory: true)
++        let root = base.appendingPathComponent(L("Заметочки"), isDirectory: true)
+         var written = 0
+         func write(_ parent: String?, into folder: URL) {
+             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+             var used: Set<String> = []
+             for note in store.children(of: parent) {
+-                var name = safeFileName(note.title.isEmpty ? "Без названия" : note.title)
++                var name = safeFileName(note.title.isEmpty ? L("Без названия") : note.title)
+                 var n = 2
+                 while used.contains(name.lowercased()) { name = safeFileName(note.title) + " \(n)"; n += 1 }
+                 used.insert(name.lowercased())
+diff --git a/Sources/Zametki/ZametkiApp.swift b/Sources/Zametki/ZametkiApp.swift
+index 8f3e283..a101773 100644
+--- a/Sources/Zametki/ZametkiApp.swift
++++ b/Sources/Zametki/ZametkiApp.swift
+@@ -19,54 +19,54 @@ struct ZametkiApp: App {
+     }
+ 
+     var body: some Scene {
+-        Window("Заметочки", id: "main") {
++        Window(L("Заметочки"), id: "main") {
+             RootView(store: store, showList: $showList, showInspector: $showInspector)
+         }
+         .windowStyle(.hiddenTitleBar)
+         .commands {
+             // ⌘, открывает те же настройки внутри окна, что и шестерёнка.
+             CommandGroup(replacing: .appSettings) {
+-                Button("Настройки…") { NotificationCenter.default.post(name: .openSettings, object: nil) }
++                Button(L("Настройки…")) { NotificationCenter.default.post(name: .openSettings, object: nil) }
+                     .keyboardShortcut(",")
+             }
+             CommandGroup(replacing: .newItem) {
+                 NoteFileCommands(store: store, shortcuts: true)
+             }
+             CommandGroup(after: .textEditing) {
+-                Toggle("Звук печати", isOn: $typingSound)
+-                Toggle("Заглавные буквы автоматически", isOn: $autoCapitalize)
++                Toggle(L("Звук печати"), isOn: $typingSound)
++                Toggle(L("Заглавные буквы автоматически"), isOn: $autoCapitalize)
+                 Divider()
+-                Button("Голосовой ввод") { Dictation.shared.toggle() }
++                Button(L("Голосовой ввод")) { Dictation.shared.toggle() }
+                     .keyboardShortcut("d", modifiers: [.command, .shift])
+             }
+-            CommandMenu("Формат") {
+-                format("Заголовок", .block(.title), "1", [.command, .option])
+-                format("Подзаголовок", .block(.heading), "2", [.command, .option])
+-                format("Маленький заголовок", .block(.subheading), "3", [.command, .option])
++            CommandMenu(L("Формат")) {
++                format(L("Заголовок"), .block(.title), "1", [.command, .option])
++                format(L("Подзаголовок"), .block(.heading), "2", [.command, .option])
++                format(L("Маленький заголовок"), .block(.subheading), "3", [.command, .option])
+                 Divider()
+-                format("Жирный", .bold, "b", .command)
+-                format("Курсив", .italic, "i", .command)
+-                format("Подчёркнутый", .underline, "u", .command)
+-                format("Зачёркнутый", .strike, "x", [.command, .shift])
+-                format("Маркер", .highlight, "m", [.command, .shift])
++                format(L("Жирный"), .bold, "b", .command)
++                format(L("Курсив"), .italic, "i", .command)
++                format(L("Подчёркнутый"), .underline, "u", .command)
++                format(L("Зачёркнутый"), .strike, "x", [.command, .shift])
++                format(L("Маркер"), .highlight, "m", [.command, .shift])
+                 Divider()
+-                format("Список", .block(.bullet), "7", [.command, .shift])
+-                format("Нумерованный список", .block(.numbered), "9", [.command, .shift])
+-                format("Чеклист", .block(.todo), "l", [.command, .shift])
+-                format("Цитата", .block(.quote), "'", [.command, .shift])
+-                format("Страница", .block(.page), "p", [.command, .option])
++                format(L("Список"), .block(.bullet), "7", [.command, .shift])
++                format(L("Нумерованный список"), .block(.numbered), "9", [.command, .shift])
++                format(L("Чеклист"), .block(.todo), "l", [.command, .shift])
++                format(L("Цитата"), .block(.quote), "'", [.command, .shift])
++                format(L("Страница"), .block(.page), "p", [.command, .option])
+             }
+             CommandGroup(after: .sidebar) {
+-                Button(showInspector ? "Скрыть панель справа" : "Показать панель справа") {
++                Button(showInspector ? L("Скрыть панель справа") : L("Показать панель справа")) {
+                     withAnimation(.smooth(duration: 0.3)) { showInspector.toggle() }
+                 }
+                 .keyboardShortcut("\\", modifiers: [.command, .option])
+-                Button(showList ? "Скрыть список" : "Показать список") {
++                Button(showList ? L("Скрыть список") : L("Показать список")) {
+                     withAnimation(.snappy(duration: 0.25)) { showList.toggle() }
+                 }
+                 .keyboardShortcut("\\")
+-                Button("Предыдущая") { store.step(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
+-                Button("Следующая") { store.step(1) }.keyboardShortcut(.downArrow, modifiers: [.command, .option])
++                Button(L("Предыдущая")) { store.step(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
++                Button(L("Следующая")) { store.step(1) }.keyboardShortcut(.downArrow, modifiers: [.command, .option])
+             }
+         }
+     }
+@@ -254,7 +254,7 @@ struct MicButton: View {
+             }
+         }
+         .buttonStyle(.plain)
+-        .accessibilityLabel("Голосовой ввод")
++        .accessibilityLabel(L("Голосовой ввод"))
+         .help(help)
+     }
+ 
+@@ -269,10 +269,10 @@ struct MicButton: View {
+ 
+     private var help: String {
+         switch dictation.state {
+-        case .listening: dictation.warming ? "Загружаю распознавание… можно уже говорить" : "Говорите. Нажмите ещё раз - вставить, Esc - отмена"
+-        case .finishing: "Расставляю знаки…"
++        case .listening: dictation.warming ? L("Загружаю распознавание… можно уже говорить") : L("Говорите. Нажмите ещё раз - вставить, Esc - отмена")
++        case .finishing: L("Расставляю знаки…")
+         case .failed(let message): message
+-        case .idle: "Голосовой ввод (⇧⌘D)"
++        case .idle: L("Голосовой ввод (⇧⌘D)")
+         }
+     }
+ }
+@@ -291,8 +291,8 @@ struct NoteMenu: View {
+         .buttonStyle(.plain)
+         .menuIndicator(.hidden)
+         .fixedSize()
+-        .accessibilityLabel("Действия с заметкой")
+-        .help("Копировать, экспорт, импорт")
++        .accessibilityLabel(L("Действия с заметкой"))
++        .help(L("Копировать, экспорт, импорт"))
+     }
+ }
+ 
+@@ -302,23 +302,23 @@ struct NoteFileCommands: View {
+     var shortcuts = false
+ 
+     var body: some View {
+-        Button("Новая заметка") { store.create() }
++        Button(L("Новая заметка")) { store.create() }
+             .keyboardShortcut(shortcuts ? KeyboardShortcut("n", modifiers: .command) : nil)
+         Divider()
+-        Button("Скопировать заметку") { if let note = store.selected { Transfer.copy(note.doc) } }
++        Button(L("Скопировать заметку")) { if let note = store.selected { Transfer.copy(note.doc) } }
+             .keyboardShortcut(shortcuts ? KeyboardShortcut("c", modifiers: [.command, .shift]) : nil)
+-        Menu("Экспорт") {
++        Menu(L("Экспорт")) {
+             ForEach(Transfer.Format.allCases, id: \.self) { format in
+                 Button(format.name) { if let note = store.selected { Transfer.export(note, as: format) } }
+             }
+         }
+-        Button("Импорт…") { store.add(Transfer.pickFiles()) }
++        Button(L("Импорт…")) { store.add(Transfer.pickFiles()) }
+             .keyboardShortcut(shortcuts ? KeyboardShortcut("o", modifiers: .command) : nil)
+         Divider()
+-        Button("Показать в Finder") {
++        Button(L("Показать в Finder")) {
+             if let id = store.selectedID { NSWorkspace.shared.activateFileViewerSelecting([store.fileURL(id)]) }
+         }
+-        Button("Удалить заметку") { if let id = store.selectedID { store.delete(id) } }
++        Button(L("Удалить заметку")) { if let id = store.selectedID { store.delete(id) } }
+             // Не ⌘⌫: в тексте это «стереть до начала строки», и заметка улетала бы целиком.
+             .keyboardShortcut(shortcuts ? KeyboardShortcut(.delete, modifiers: [.command, .shift]) : nil)
+     }
+@@ -375,11 +375,11 @@ struct NoteList: View {
+     /// «Сейчас», «Сегодня, 14:05», «Вчера», «2 окт».
+     static func when(_ date: Date) -> String {
+         let calendar = Calendar.current
+-        if Date().timeIntervalSince(date) < 60 { return "Сейчас" }
++        if Date().timeIntervalSince(date) < 60 { return L("Сейчас") }
+         let formatter = DateFormatter()
+-        formatter.locale = Locale(identifier: "ru_RU")
+-        if calendar.isDateInToday(date) { formatter.dateFormat = "HH:mm"; return "Сегодня, " + formatter.string(from: date) }
+-        if calendar.isDateInYesterday(date) { return "Вчера" }
++        formatter.locale = Locale(identifier: Localization.isRussian ? "ru_RU" : "en_US")
++        if calendar.isDateInToday(date) { formatter.dateFormat = "HH:mm"; return L("Сегодня, ") + formatter.string(from: date) }
++        if calendar.isDateInYesterday(date) { return L("Вчера") }
+         formatter.dateFormat = "d MMM"
+         return formatter.string(from: date)
+     }
+@@ -482,14 +482,14 @@ struct NoteList: View {
+         }
+         .onDrop(of: [NoteList.noteType], delegate: RowDrop(note: note, store: store, height: rowHeight(depth), dragged: $dragged, target: $target))
+         .contextMenu {
+-            Button("Новая страница внутри") {
++            Button(L("Новая страница внутри")) {
+                 if let page = store.createPage(in: note.id, title: "") {
+                     store.edit(note.id) { Formatting.appendCard(page, to: $0) }
+                     store.select(page)
+                 }
+             }
+             Divider()
+-            Button("Удалить") { store.delete(note.id) }
++            Button(L("Удалить")) { store.delete(note.id) }
+         }
+     }
+ 
+diff --git a/build.sh b/build.sh
+index aefe4b1..6dd63fe 100755
+--- a/build.sh
++++ b/build.sh
+@@ -8,13 +8,19 @@ set -euo pipefail
+ cd "$(dirname "$0")"
+ APP="build/Zametki.app"
+ 
+-if [ ! -f build/icon-out/Assets.car ]; then
++HAS_ICON=0
++if [ -f build/icon-out/Assets.car ]; then
++    HAS_ICON=1
++elif xcrun --find actool >/dev/null 2>&1; then
+     echo "==> иконка"
+     mkdir -p build/icon-out
+     swift tools/make-icon.swift
+     xcrun actool build/AppIcon.icon --compile build/icon-out --platform macosx \
+         --minimum-deployment-target 14.0 --app-icon AppIcon \
+         --output-partial-info-plist build/icon-out/partial.plist >/dev/null
++    HAS_ICON=1
++else
++    echo "==> иконка пропущена: нужен полный Xcode (actool); приложение соберётся с обычной иконкой"
+ fi
+ 
+ echo "==> swift build"
+@@ -26,7 +32,9 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+ cp "$BIN" "$APP/Contents/MacOS/Zametki"
+ strip -x "$APP/Contents/MacOS/Zametki"
+ cp Resources/Info.plist "$APP/Contents/Info.plist"
+-cp build/icon-out/AppIcon.icns build/icon-out/Assets.car Resources/Caveat.ttf Resources/OFL.txt "$APP/Contents/Resources/"
++cp Resources/Caveat.ttf Resources/OFL.txt "$APP/Contents/Resources/"
++[ "$HAS_ICON" = 1 ] && cp build/icon-out/AppIcon.icns build/icon-out/Assets.car "$APP/Contents/Resources/"
++cp -R Resources/en.lproj Resources/ru.lproj "$APP/Contents/Resources/"   # English / Русский
+ SIGN_ID="-"
+ security find-identity -v -p codesigning 2>/dev/null | grep -q "Local Dev Signing" && SIGN_ID="Local Dev Signing"
+ codesign --force --sign "$SIGN_ID" "$APP"
