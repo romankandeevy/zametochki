@@ -4,7 +4,7 @@
 (() => {
   // ───────── мелочи ─────────
   /// Видно в настройках: по нему ясно, доехало ли обновление.
-  const APP_VERSION = 7;
+  const APP_VERSION = 9;
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -24,6 +24,7 @@
     page: '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
     image: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
     board: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15 4v16"/></svg>',
+    whiteboard: '<svg viewBox="0 0 24 24"><path d="M4 16c3-6 5 2 8-3s4-5 8-6"/><path d="M5 20h14"/></svg>',
     audio: '<svg viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>',
     table: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M3 15h18M10 4v16"/></svg>',
     divider: '<svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>',
@@ -50,14 +51,15 @@
   const OBJECTS = [
     ['image', 'Картинка', ICON.image, 'Из фото или камеры', ['картин', 'фото', 'image']],
     ['file', 'Файл', ICON.file, 'Любой файл с телефона', ['файл', 'file', 'вложен']],
-    ['board', 'Канбан', ICON.board, 'Колонки и карточки', ['канбан', 'доск', 'kanban', 'board']],
+    ['whiteboard', 'Доска', ICON.whiteboard, 'Рисунки, фигуры и стикеры', ['доск', 'рис', 'холст', 'скетч', 'whiteboard']],
+    ['board', 'Канбан', ICON.board, 'Колонки и карточки', ['канбан', 'kanban', 'колонк']],
     ['audio', 'Голосовая заметка', ICON.audio, 'Запись с расшифровкой', ['голос', 'аудио', 'запис', 'voice']],
     ['table', 'Таблица', ICON.table, 'Строки и столбцы', ['табл', 'table']],
     ['divider', 'Разделитель', ICON.divider, 'Линия', ['раздел', 'линия', '---']],
     ['page', 'Страница', ICON.page, 'Страница внутри заметки', ['страниц', 'page']],
     ['template', 'Шаблон', ICON.template, 'Встреча, план недели, идея…', ['шабл', 'templ', 'встреч', 'план']],
   ];
-  const OBJECT_TYPES = new Set(['image', 'file', 'board', 'audio', 'table', 'divider', 'page']);
+  const OBJECT_TYPES = new Set(['image', 'file', 'board', 'whiteboard', 'audio', 'table', 'divider', 'page']);
   const isObject = b => OBJECT_TYPES.has(b.type);
   const CONTINUES = new Set(['bullet', 'numbered', 'todo', 'done', 'quote', 'toggleItem', 'code']);
   const SHORTCUTS = [['###', 'subheading'], ['##', 'heading'], ['#', 'title'], ['[ ]', 'todo'], ['[]', 'todo'],
@@ -281,7 +283,8 @@
       </div>`;
     }).join('');
   }
-  const boardText = n => n.blocks.filter(b => b.type === 'board').flatMap(b => b.columns.flatMap(c => [c.title, ...c.cards.map(k => k.text)])).join('\n').toLowerCase();
+  const boardText = n => [...n.blocks.filter(b => b.type === 'board').flatMap(b => b.columns.flatMap(c => [c.title, ...c.cards.map(k => k.text)])),
+    ...n.blocks.filter(b => b.type === 'whiteboard').flatMap(b => ZWhiteboard.texts(b.board || { items: [] }))].join('\n').toLowerCase();
 
   listEl.addEventListener('click', e => {
     const twist = e.target.closest('[data-twist]');
@@ -415,6 +418,7 @@
       el.innerHTML = objectHTML(b) + `<div class="objbar">${b.type === 'image' ? '<button data-obj="size">Размер</button>' : ''}<button data-obj="up" aria-label="Выше">↑</button><button data-obj="down" aria-label="Ниже">↓</button><button class="del" data-obj="del">Удалить</button></div>`;
       if (b.type === 'image') loadImage(b, el);
       if (b.type === 'audio') setupPlayer(b, el);
+      if (b.type === 'whiteboard') setTimeout(() => paintWhiteboard(b), 0);
       return el;
     }
     el.className = `blk b-${b.type}${b.collapsed ? ' collapsed' : ''}`;
@@ -910,6 +914,7 @@
     if (b.type === 'page') return openNote(b.page, true);
     if (b.type === 'file') return openFile(b);
     if (b.type === 'board') return boardClick(b, e);
+    if (b.type === 'whiteboard') return openWhiteboard(b);
     if (b.type === 'audio' && e.target.closest('.play')) return togglePlay(b);
     if (b.type === 'table' && e.target.closest('[data-tbl]')) return tableAction(b, e.target.closest('[data-tbl]').dataset.tbl);
     if (b.type === 'table' && e.target.closest('td')) return;
@@ -1120,8 +1125,11 @@
     if (type === 'page') return makePage(b);
     const ob = { id: uid(), type };
     if (type === 'board') ob.columns = emptyBoard();
+    if (type === 'whiteboard') ob.board = ZWhiteboard.newBoard();
     if (type === 'table') ob.cells = [['', '', ''], ['', '', ''], ['', '', '']];
     placeObject(b, ob, empty);
+    // Новая доска сразу открывается - можно рисовать.
+    if (type === 'whiteboard') openWhiteboard(ob);
   }
 
   /// Предмет встаёт на пустую строку (а она уходит под него) или под непустую.
@@ -1143,6 +1151,31 @@
     elOf(ob).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     return ob;
   }
+
+  // ───────── белая доска ─────────
+  /// Что доске нужно от заметки: шрифт и цвета страницы, картинки из хранилища телефона.
+  function whiteboardEnv() {
+    const n = note(openId), v = styleVars(n && n.style);
+    return {
+      family: CANVAS_FONTS[v.fontKey] || CANVAS_FONTS.hand, hand: v.fontKey === 'hand', background: v.base,
+      colors: Object.fromEntries(TEXT_COLORS.map(c => [c[0], c[1]])),
+      imageURL: id => fileURL(id),
+      saveImage: async file => { const blob = await shrinkImage(file); const id = uid(); await DB.put('files', { id, blob, type: blob.type }); return id; },
+    };
+  }
+  function paintWhiteboard(b) {
+    const el = elOf(b), canvas = el && el.querySelector('.wbprev canvas');
+    if (canvas) ZWhiteboard.paintPreview(canvas, b.board || (b.board = ZWhiteboard.newBoard()), whiteboardEnv());
+  }
+  function openWhiteboard(b) {
+    hideKeyboard();
+    if (!b.board) b.board = ZWhiteboard.newBoard();
+    const n = note(openId);
+    const env = whiteboardEnv();
+    env.onClose = () => { paintWhiteboard(b); save(n); };
+    ZWhiteboard.open(b.board, env, () => save(n, false));
+  }
+  addEventListener('resize', () => { const n = note(openId); if (n) n.blocks.filter(b => b.type === 'whiteboard').forEach(paintWhiteboard); });
 
   function makePage(b) {
     const el = elOf(b), txt = el.querySelector('.txt');
@@ -1170,6 +1203,7 @@
         return `<div class="card">${ICON.page}<span class="cbody"><span class="ct">${esc(p ? titleOf(p) : 'Страница удалена')}</span>${p && previewOf(p) ? `<span class="cp">${esc(previewOf(p))}</span>` : ''}</span>${ICON.chevron}</div>`;
       }
       case 'board': return boardHTML(b);
+      case 'whiteboard': return '<div class="wbprev"><canvas></canvas></div>';
       case 'audio': return `<div class="player"><button class="play" aria-label="Играть">${ICON.play}</button><div class="wave">${(b.peaks || []).map(p => `<i style="height:${Math.max(10, p * 100)}%"></i>`).join('')}</div><time>${fmtTime(b.duration || 0)}</time></div>`;
       case 'table': return `<div class="table"><table>${b.cells.map(row => `<tr>${row.map(c => `<td contenteditable="true">${esc(c)}</td>`).join('')}</tr>`).join('')}</table></div>
         <div class="tablebtns"><button data-tbl="row+">+ строка</button><button data-tbl="col+">+ столбец</button><button data-tbl="row-">− строка</button><button data-tbl="col-">− столбец</button></div>`;
@@ -1702,6 +1736,7 @@
         case 'audio': return '[голосовая заметка]';
         case 'page': return '📄 ' + (note(b.page) ? titleOf(note(b.page)) : 'Страница');
         case 'board': return b.columns.map(c => [`**${c.title}**`, ...c.cards.map(k => '- ' + k.text)].join('\n')).join('\n\n');
+        case 'whiteboard': { const t = ZWhiteboard.texts(b.board || { items: [] }); return '*Доска*' + (t.length ? ': ' + t.join(' · ') : ''); }
         case 'table': return b.cells.map((r, i) => '| ' + r.join(' | ') + ' |' + (i === 0 ? '\n|' + r.map(() => ' --- |').join('') : '')).join('\n');
         default: return md;
       }
@@ -1722,7 +1757,10 @@
       const type = blockRun ? blockRun.block : 'text';
       if (p === '￼') {
         const r = at(start).find(x => x.block) || {};
-        if (r.board) { try { blocks.push({ id: uid(), type: 'board', columns: JSON.parse(r.board).columns }); } catch {} }
+        // Белая доска: на Mac - ключ whiteboard; в ранней сборке она лежала под board, но без колонок.
+        const wb = r.whiteboard || (r.board && !/"columns"/.test(r.board) ? r.board : null);
+        if (wb) { try { const d = JSON.parse(wb); blocks.push({ id: uid(), type: 'whiteboard', board: { ...d, id: d.id || uid(), items: d.items || [] } }); } catch {} }
+        else if (r.board) { try { blocks.push({ id: uid(), type: 'board', columns: JSON.parse(r.board).columns }); } catch {} }
         else if (r.table) { try { blocks.push({ id: uid(), type: 'table', cells: JSON.parse(r.table).cells }); } catch {} }
         else if (r.block === 'divider') blocks.push({ id: uid(), type: 'divider' });
         else if (r.block === 'image') blocks.push({ id: uid(), type: 'text', html: '[картинка осталась на Mac]' });
@@ -2105,6 +2143,7 @@
     const bg = v.image && await bitmapOf(v.image), cover = v.cover && await bitmapOf(v.cover);
     const images = new Map();
     for (const b of n.blocks) if (b.type === 'image') images.set(b.id, await bitmapOf(b.file));
+    for (const b of n.blocks) if (b.type === 'whiteboard' && b.board) await ZWhiteboard.preload(b.board, whiteboardEnv());
     const meter = document.createElement('canvas').getContext('2d');
     const base = v.px / textScale(), lh = v.line;
     const font = (size, weight = 500, f = fam) => `${weight} ${size}px ${f}`;
@@ -2213,6 +2252,10 @@
           ctx.fillStyle = fg; ctx.font = font(base * 0.8, 650); ctx.textBaseline = 'middle';
           ctx.fillText((b.type === 'page' ? '📄 ' : '📎 ') + title, pad + 18, top + h / 2);
         });
+      } else if (b.type === 'whiteboard') {
+        h = colW / ZWhiteboard.ASPECT;
+        const wbEnv = { ...whiteboardEnv(), family: fam, hand: v.fontKey === 'hand' };
+        ops.push(ctx => ZWhiteboard.drawPreviewInto(ctx, b.board || { items: [] }, pad, top, colW, h, wbEnv));
       } else if (b.type === 'board') {
         const cols = b.columns.length || 1, gap = 8, lw = (colW - gap * (cols + 1)) / cols;
         const rows = Math.max(1, ...b.columns.map(c => c.cards.length));
@@ -2384,13 +2427,19 @@
     statsBtn.textContent = picked ? `выделено ${picked} ${plural(picked, 'слово', 'слова', 'слов')}`
       : `${words} ${plural(words, 'слово', 'слова', 'слов')} · ${Math.max(1, Math.ceil(words / 180))} мин чтения`;
     statsBtn.classList.toggle('focus', editor.classList.contains('focus-mode'));
+    $('#btn-focus').classList.toggle('on', editor.classList.contains('focus-mode'));
   }
-  statsBtn.addEventListener('click', () => {
+  /// Режим фокуса: кнопка-прицел в шапке, счётчик слов и «⋯» - одно и то же.
+  function toggleFocus() {
     editor.classList.toggle('focus-mode');
     local.set('focus', editor.classList.contains('focus-mode'));
     toast(editor.classList.contains('focus-mode') ? 'Режим фокуса: видно только строку, которую пишешь' : 'Режим фокуса выключен');
     updateStats();
-  });
+  }
+  statsBtn.addEventListener('click', toggleFocus);
+  $('#btn-focus').addEventListener('click', toggleFocus);
+  // Кнопка не забирает фокус у строки - клавиатура не прячется.
+  $('#btn-focus').addEventListener('pointerdown', e => e.preventDefault());
 
   // ───────── звук печати ─────────
   let audioCtx = null;
