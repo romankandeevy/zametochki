@@ -105,7 +105,7 @@ struct Editor: NSViewRepresentable {
                     shownRevision = note.revision
                     applyStyle(note.doc.style ?? PageStyle.saved)
                     let selection = textView.selectedRange()
-                    textView.textStorage?.setAttributedString(Formatting.attributed(note.doc))
+                    textView.textStorage?.setAttributedString(Self.withTitleLine(note.doc))
                     render()
                     let length = (textView.string as NSString).length
                     textView.setSelectedRange(NSRange(location: min(selection.location, length), length: 0))
@@ -121,7 +121,7 @@ struct Editor: NSViewRepresentable {
             hideBar()
             let swap = {
                 self.applyStyle(note?.doc.style ?? PageStyle.saved)
-                textView.textStorage?.setAttributedString(Formatting.attributed(note?.doc ?? .init(text: "")))
+                textView.textStorage?.setAttributedString(Self.withTitleLine(note?.doc ?? .init(text: "")))
                 self.render()
                 textView.undoManager?.removeAllActions()
                 textView.setSelectedRange(NSRange(location: (textView.string as NSString).length, length: 0))
@@ -161,7 +161,7 @@ struct Editor: NSViewRepresentable {
             if !editingSelf, text == "/", range.length == 0 {
                 let paragraph = paragraphRange(at: range.location)
                 let content = (textView.string as NSString).substring(with: paragraph).trimmingCharacters(in: .newlines)
-                if content.isEmpty { slashCandidate = range.location }
+                if content.isEmpty, paragraph.location > 0 { slashCandidate = range.location }
             }
             if !editingSelf, let handled = capitalize(textView, range: range, typing: text) {
                 return handled
@@ -261,12 +261,19 @@ struct Editor: NSViewRepresentable {
             // Backspace в самом начале абзаца.
             let caret = textView.selectedRange()
             if text.isEmpty, caret.length == 0, caret.location == paragraphRange(at: caret.location).location {
+                // Начало заголовка: стирать нечего, а тип у заголовка не снимается.
+                if caret.location == 0 { return false }
                 let here = block(at: caret.location)
                 if here.isObject {
-                    // Перед карточкой: убираем пустую строку над ней, а саму карточку не трогаем.
-                    if caret.location > 0, paragraphRange(at: caret.location - 1).length == 1 {
-                        replace(NSRange(location: caret.location - 1, length: 1), with: NSAttributedString(string: ""))
+                    // Курсор на предмете (вокруг него рамка) - стираем предмет целиком вместе с его строкой.
+                    var line = paragraphRange(at: caret.location)
+                    // Последняя строка без переноса: забираем перенос над ней, чтобы не осталось пустой строки.
+                    if !ns.substring(with: line).hasSuffix("\n"), line.location > 0 {
+                        line = NSRange(location: line.location - 1, length: line.length + 1)
                     }
+                    replace(line, with: NSAttributedString(string: ""))
+                    let after = min(line.location, (textView.string as NSString).length)
+                    textView.setSelectedRange(NSRange(location: after, length: 0))
                     return false
                 }
                 // Внутри кода (и сворачиваемого списка) Backspace в начале строки просто склеивает её с предыдущей -
@@ -353,7 +360,13 @@ struct Editor: NSViewRepresentable {
                 return
             }
             let ns = textView.string as NSString
-            let paragraphs = ns.paragraphRange(for: NSRange(location: min(range.location, ns.length), length: range.length))
+            var paragraphs = ns.paragraphRange(for: NSRange(location: min(range.location, ns.length), length: range.length))
+            // Заголовок заметки свой тип не меняет: правим только строки под ним.
+            if paragraphs.location == 0 {
+                let title = ns.paragraphRange(for: NSRange(location: 0, length: 0))
+                guard NSMaxRange(paragraphs) > NSMaxRange(title) else { return }
+                paragraphs = NSRange(location: NSMaxRange(title), length: NSMaxRange(paragraphs) - NSMaxRange(title))
+            }
             if paragraphs.length > 0 {
                 changeAttributes(in: paragraphs) { storage in
                     if block == .text {
@@ -514,7 +527,9 @@ struct Editor: NSViewRepresentable {
             let ns = storage.string as NSString
             var location: Int
             if let boundary {
-                location = min(boundary, ns.length)
+                // Выше заголовка и внутрь него ничего не вставляем.
+                let titleEnd = ns.length > 0 ? NSMaxRange(ns.paragraphRange(for: NSRange(location: 0, length: 0))) : 0
+                location = min(max(boundary, titleEnd), ns.length)
             } else {
                 let paragraph = paragraphRange(at: textView.selectedRange().location)
                 let content = ns.substring(with: paragraph).trimmingCharacters(in: .newlines)
@@ -797,6 +812,11 @@ struct Editor: NSViewRepresentable {
             guard let textView, let storage = textView.textStorage else { return }
             guard boundary < range.location || boundary > NSMaxRange(range) else { return }
             let ns = storage.string as NSString
+            // Заголовок не двигается, и над ним ничего не встаёт.
+            let titleEnd = NSMaxRange(ns.paragraphRange(for: NSRange(location: 0, length: 0)))
+            guard range.location > 0 else { return }
+            let boundary = max(boundary, titleEnd)
+            guard boundary < range.location || boundary > NSMaxRange(range) else { return }
             var piece = NSMutableAttributedString(attributedString: storage.attributedSubstring(from: range))
             var cut = range
             if !piece.string.hasSuffix("\n") {
@@ -957,11 +977,33 @@ struct Editor: NSViewRepresentable {
             if UserDefaults.standard.object(forKey: "typingSound") as? Bool ?? true { TypingSound.shared.play(.space) }
         }
 
+        /// Текст заметки для редактора: первая строка - всегда заголовок.
+        private static func withTitleLine(_ doc: Formatting.Doc) -> NSAttributedString {
+            let text = NSMutableAttributedString(attributedString: Formatting.attributed(doc))
+            Formatting.ensureTitleLine(text)
+            return text
+        }
+
         // MARK: изменения
 
         func textDidChange(_ notification: Notification) {
             guard let textView, let id = shownID, let storage = textView.textStorage else { return }
+            // Предмет попал в самое начало (вставка, перетаскивание) - над ним встаёт строка заголовка.
+            if storage.length > 0, (storage.string as NSString).character(at: 0) == 0xFFFC {
+                let selection = textView.selectedRange()
+                let line = NSAttributedString(string: "\n", attributes: Formatting.visual([.zBlock: Block.title.rawValue]))
+                editingSelf = true
+                if textView.shouldChangeText(in: NSRange(location: 0, length: 0), replacementString: "\n") {
+                    storage.replaceCharacters(in: NSRange(location: 0, length: 0), with: line)
+                    textView.didChangeText()
+                    textView.setSelectedRange(NSRange(location: selection.location + 1, length: selection.length))
+                }
+                editingSelf = false
+                return
+            }
             render()
+            // Пустая заметка: первое, что напечатаешь, - заголовок.
+            if storage.length == 0 { textView.typingAttributes = Formatting.visual([.zBlock: Block.title.rawValue]) }
             if let range = pendingFade { startFade(range) }
             pendingFade = nil
             // Живой текст диктовки не сохраняем - в файл попадёт только окончательный.
@@ -1107,7 +1149,8 @@ struct Editor: NSViewRepresentable {
         private func attributesForTyping() -> [NSAttributedString.Key: Any] {
             guard let textView, let storage = textView.textStorage else { return Formatting.visual([:]) }
             let location = textView.selectedRange().location
-            guard location > 0, location <= storage.length else { return Formatting.visual([:]) }
+            if location == 0 { return Formatting.visual([.zBlock: Block.title.rawValue]) }
+            guard location <= storage.length else { return Formatting.visual([:]) }
             return storage.attributes(at: location - 1, effectiveRange: nil)
         }
 
@@ -1520,6 +1563,7 @@ final class NotesTextView: NSTextView {
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        drawTitleRule()
         drawHint()
         drawImageUI()
         gutter.needsDisplay = true
@@ -1605,6 +1649,8 @@ final class NotesTextView: NSTextView {
         let paragraph = ns.paragraphRange(for: NSRange(location: min(caret.location, ns.length), length: 0))
         let content = ns.substring(with: paragraph).trimmingCharacters(in: .newlines)
         guard content.isEmpty else { return }
+        // Пустой заголовок подписывает drawTitleRule - всегда, а не только под курсором.
+        if paragraph.location == 0, storage.length > 0 { return }
         let attrs = paragraph.length > 0 && paragraph.location < storage.length
             ? storage.attributes(at: paragraph.location, effectiveRange: nil) : typingAttributes
         let block = Formatting.block(of: attrs)
@@ -1634,6 +1680,27 @@ final class NotesTextView: NSTextView {
         let x = textContainerOrigin.x + (textContainer?.lineFragmentPadding ?? 5) + (paragraphStyle?.firstLineHeadIndent ?? 0)
         let y = textContainerOrigin.y + line.minY + (paragraphStyle?.paragraphSpacingBefore ?? 0)
         NSAttributedString(string: hint, attributes: hintAttrs).draw(at: NSPoint(x: x, y: y))
+    }
+
+    /// Заголовок отделён от текста заметки тонкой линией; пустой подписан серым «Заголовок».
+    private func drawTitleRule() {
+        guard let storage = textStorage, storage.length > 0, let layout = layoutManager else { return }
+        let ns = storage.string as NSString
+        let title = ns.paragraphRange(for: NSRange(location: 0, length: 0))
+        let left = textContainerOrigin.x + (textContainer?.lineFragmentPadding ?? 5)
+        let content = ns.substring(with: title).trimmingCharacters(in: .newlines)
+        let lastGlyph = layout.glyphIndexForCharacter(at: max(0, NSMaxRange(title) - 1))
+        let used = layout.lineFragmentUsedRect(forGlyphAt: lastGlyph, effectiveRange: nil)
+        guard used.height > 0 else { return }
+        let y = textContainerOrigin.y + used.maxY + Formatting.titleGap / 2
+        Style.text.withAlphaComponent(0.16).setFill()
+        NSRect(x: left, y: round(y), width: bounds.width - left * 2, height: 1).fill()
+        guard content.isEmpty, (delegate as? Editor.Coordinator)?.menuOpen != true else { return }
+        var attrs = Formatting.visual([.zBlock: Block.title.rawValue])
+        attrs[.foregroundColor] = Style.text.withAlphaComponent(0.28)
+        attrs.removeValue(forKey: .strokeWidth)
+        let line = layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: 0), effectiveRange: nil)
+        NSAttributedString(string: Block.title.name, attributes: attrs).draw(at: NSPoint(x: left, y: textContainerOrigin.y + line.minY))
     }
 
     private func checkboxRect(_ mid: CGFloat, left: CGFloat) -> NSRect {
@@ -2012,7 +2079,8 @@ final class NotesTextView: NSTextView {
             NSCursor.resizeLeftRight.set()
             return
         }
-        let paragraph = paragraph(at: point)
+        // У заголовка нет «+» и ручки: его тип не меняется и он не двигается.
+        let paragraph = paragraph(at: point).flatMap { $0.location == 0 ? nil : $0 }
         let overPlus = [paragraph, caretEmptyParagraph].compactMap { $0 }
             .contains { plusRect(for: $0).insetBy(dx: -3, dy: -3).contains(point) }
         if paragraph != hovered || overPlus != plusHovered {
@@ -2032,7 +2100,7 @@ final class NotesTextView: NSTextView {
     }
 
     /// Одна строка с «+» и ⠿: под мышью, а если мышь не над текстом - с курсором.
-    private var gutterParagraph: NSRange? { hovered ?? caretEmptyParagraph }
+    private var gutterParagraph: NSRange? { (hovered ?? caretEmptyParagraph).flatMap { $0.location == 0 ? nil : $0 } }
 
     private func updateCursor(at point: NSPoint) {
         if handleParagraphs.contains(where: { handleRect(for: $0).insetBy(dx: -4, dy: -4).contains(point) }) {
@@ -2191,6 +2259,20 @@ final class NotesTextView: NSTextView {
         let glyph = layout.glyphIndexForCharacter(at: paragraph.location)
         let line = layout.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
         let font = storage.attribute(.font, at: paragraph.location, effectiveRange: nil) as? NSFont ?? Style.font(Style.editorSize)
+        // Строка-предмет (таблица, доска, картинка) выше строки текста: «+» и ручка - у её верхнего края, а не внизу.
+        if Formatting.block(of: storage.attributes(at: paragraph.location, effectiveRange: nil)).isObject,
+           let container = textContainer {
+            let ns = storage.string as NSString
+            // «+» передаёт только начало строки (длина 0) - берём строку целиком.
+            let object = ns.range(of: "\u{FFFC}", options: [], range: ns.paragraphRange(for: NSRange(location: paragraph.location, length: 0)))
+            if object.location != NSNotFound {
+                let glyphs = layout.glyphRange(forCharacterRange: object, actualCharacterRange: nil)
+                let rect = layout.boundingRect(forGlyphRange: glyphs, in: container)
+                let text = Style.font(Style.editorSize)
+                // Низкий предмет (разделитель) - просто по его середине.
+                return textContainerOrigin.y + min(rect.minY + 4 + ceil(text.ascender - text.descender) / 2, rect.midY)
+            }
+        }
         let baseline = line.minY + layout.location(forGlyphAt: glyph).y
         return textContainerOrigin.y + baseline - font.xHeight / 2
     }
@@ -2205,6 +2287,7 @@ final class NotesTextView: NSTextView {
         guard caret.length == 0 else { return nil }
         let ns = storage.string as NSString
         let paragraph = ns.paragraphRange(for: NSRange(location: min(caret.location, ns.length), length: 0))
+        if paragraph.location == 0 { return nil }
         // Строку внутри свёрнутого списка не показываем - её не видно.
         if paragraph.length > 0, paragraph.location < ns.length,
            storage.attribute(.zHidden, at: paragraph.location, effectiveRange: nil) != nil { return nil }

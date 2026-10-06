@@ -303,6 +303,29 @@ enum Formatting {
         return out
     }
 
+    /// Отступ под заголовком заметки: дальше начинается её текст, между ними - тонкая линия (её рисует редактор).
+    static let titleGap: CGFloat = 22
+
+    private static func separateTitle(_ storage: NSTextStorage) {
+        guard storage.length > 0 else { return }
+        let first = (storage.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
+        storage.enumerateAttribute(.paragraphStyle, in: first) { value, range, _ in
+            guard let style = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle else { return }
+            style.paragraphSpacingBefore = 0
+            style.paragraphSpacing = titleGap
+            storage.addAttribute(.paragraphStyle, value: style, range: range)
+        }
+    }
+
+    /// Первая строка - заголовок, предмет (картинка, таблица...) на ней стоять не может: если он оказался
+    /// в самом начале, над ним появляется пустая строка заголовка. Возвращает true, если строку добавили.
+    @discardableResult
+    static func ensureTitleLine(_ text: NSMutableAttributedString) -> Bool {
+        guard text.length > 0, (text.string as NSString).character(at: 0) == 0xFFFC else { return false }
+        text.insert(NSAttributedString(string: "\n", attributes: [.zBlock: Block.title.rawValue]), at: 0)
+        return true
+    }
+
     /// Пересчитать внешний вид всего текста. Тип абзаца выравнивается по его последней букве
     /// (обычно это перенос строки): она не меняется, когда печатаешь в начале или середине строки.
     /// Строки внутри свёрнутого списка помечаются скрытыми.
@@ -322,6 +345,8 @@ enum Formatting {
                 // Строка-предмет без своего символа (его стёрли) - обычный текст.
                 block = nil
             }
+            // Первая строка заметки - всегда её заголовок H1, другим типом она не бывает.
+            if enclosing.location == 0, objectAt == NSNotFound { block = Block.title.rawValue }
             if let block {
                 storage.addAttribute(.zBlock, value: block, range: enclosing)
             } else {
@@ -343,6 +368,7 @@ enum Formatting {
         var runs: [(NSRange, [NSAttributedString.Key: Any])] = []
         storage.enumerateAttributes(in: all) { attrs, range, _ in runs.append((range, visual(attrs))) }
         for (range, attrs) in runs { storage.setAttributes(attrs, range: range) }
+        separateTitle(storage)
         Reminders.highlight(storage)
         padCodeGroups(storage)
     }

@@ -258,3 +258,67 @@ final class ExportTests: XCTestCase {
         try png.write(to: output.appendingPathComponent("export-sunset.png"))
     }
 }
+
+final class TitleTests: XCTestCase {
+    private func firstBlock(_ text: NSAttributedString) -> Block {
+        Formatting.block(of: text.attributes(at: 0, effectiveRange: nil))
+    }
+
+    func testFirstLineIsAlwaysTitle() {
+        let storage = NSTextStorage(attributedString: Formatting.attributed(.init(text: "Покупки\nмолоко")))
+        Formatting.render(storage)
+        XCTAssertEqual(firstBlock(storage), .title)
+        XCTAssertEqual(Formatting.block(of: storage.attributes(at: 9, effectiveRange: nil)), .text)
+    }
+
+    func testTitleCannotBecomeList() {
+        var doc = Formatting.Doc(text: "Покупки\nмолоко")
+        doc.runs = [Formatting.Run(from: 0, length: 8, block: Block.bullet.rawValue)]
+        let storage = NSTextStorage(attributedString: Formatting.attributed(doc))
+        Formatting.render(storage)
+        XCTAssertEqual(firstBlock(storage), .title)
+    }
+
+    func testObjectAtStartGetsTitleLineAbove() {
+        let text = NSMutableAttributedString(attributedString: Formatting.object([.zTable: Table.empty.json, .zBlock: Block.table.rawValue]))
+        XCTAssertTrue(Formatting.ensureTitleLine(text))
+        XCTAssertEqual(text.string, "\n\u{FFFC}")
+        let storage = NSTextStorage(attributedString: text)
+        Formatting.render(storage)
+        XCTAssertEqual(firstBlock(storage), .title)
+        XCTAssertEqual(Formatting.block(of: storage.attributes(at: 1, effectiveRange: nil)), .table)
+        XCTAssertFalse(Formatting.ensureTitleLine(NSMutableAttributedString(string: "Текст")))
+    }
+}
+
+final class WhiteboardTests: XCTestCase {
+    func testWhiteboardSurvivesSaveAndLoad() {
+        let text = NSMutableAttributedString(string: "Схема\n")
+        text.append(Formatting.object([.zWhiteboard: Whiteboard().json, .zBlock: Block.whiteboard.rawValue]))
+        let back = Formatting.attributed(Formatting.doc(from: text))
+        XCTAssertNotNil(back.attribute(.zWhiteboard, at: 6, effectiveRange: nil))
+        XCTAssertEqual(Formatting.block(of: back.attributes(at: 6, effectiveRange: nil)), .whiteboard)
+    }
+
+    /// Доски из ранней сборки лежали под ключом канбана - при чтении они становятся белыми досками.
+    func testOldWhiteboardUnderBoardKeyMigrates() {
+        var doc = Formatting.Doc(text: "Схема\n\u{FFFC}")
+        var run = Formatting.Run(from: 6, length: 1, block: Block.board.rawValue)
+        run.board = Whiteboard().json
+        doc.runs = [run]
+        let text = Formatting.attributed(doc)
+        XCTAssertNotNil(text.attribute(.zWhiteboard, at: 6, effectiveRange: nil))
+        XCTAssertNil(text.attribute(.zBoard, at: 6, effectiveRange: nil))
+        XCTAssertEqual(Formatting.block(of: text.attributes(at: 6, effectiveRange: nil)), .whiteboard)
+    }
+
+    func testKanbanStaysKanban() {
+        var doc = Formatting.Doc(text: "План\n\u{FFFC}")
+        var run = Formatting.Run(from: 5, length: 1, block: Block.board.rawValue)
+        run.board = Board.empty.json
+        doc.runs = [run]
+        let text = Formatting.attributed(doc)
+        XCTAssertNotNil(text.attribute(.zBoard, at: 5, effectiveRange: nil))
+        XCTAssertEqual(Formatting.block(of: text.attributes(at: 5, effectiveRange: nil)), .board)
+    }
+}
