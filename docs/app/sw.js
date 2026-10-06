@@ -1,6 +1,6 @@
 // Заметочки офлайн: всё приложение лежит в кэше, заметки - в IndexedDB на устройстве.
 // Новая версия - новое имя кэша; старый удаляется, когда новая встала.
-const VERSION = 'zametochki-v4';
+const VERSION = 'zametochki-v5';
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'manifest.webmanifest', 'Caveat.woff2',
   'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable.png'];
 
@@ -14,17 +14,22 @@ self.addEventListener('activate', event => {
     .then(() => self.clients.claim()));
 });
 
-// Из кэша - сразу, даже без сети; параллельно тянем свежую версию, она откроется в следующий раз.
+// Есть сеть - берём свежую версию (так обновления приходят сразу), нет сети или она медленная - из кэша.
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   event.respondWith(caches.open(VERSION).then(async cache => {
-    const hit = await cache.match(req, { ignoreSearch: true });
-    const fresh = fetch(req).then(res => {
+    const fromNet = fetch(req, { cache: 'no-cache' }).then(res => {
       if (res.ok) cache.put(req, res.clone());
       return res;
-    }).catch(() => hit || cache.match('index.html'));
-    return hit || fresh;
+    });
+    const slow = new Promise(res => setTimeout(res, 3000));
+    try {
+      const res = await Promise.race([fromNet, slow.then(() => null)]);
+      if (res) return res;
+    } catch {}
+    const hit = await cache.match(req, { ignoreSearch: true });
+    return hit || fromNet.catch(() => cache.match('index.html'));
   }));
 });
 
