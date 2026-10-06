@@ -3,6 +3,8 @@
 // Заметки - в IndexedDB этого устройства, в сеть ничего не уходит. С Маком - через Markdown и JSON-файлы.
 (() => {
   // ───────── мелочи ─────────
+  /// Видно в настройках: по нему ясно, доехало ли обновление.
+  const APP_VERSION = 6;
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1922,7 +1924,7 @@
       <div class="group">ДАННЫЕ</div>
       <button class="item" data-a="backup"><span class="ic">⤓</span><span class="lbl">Резервная копия<small>Все заметки, картинки и записи одним файлом</small></span></button>
       <p class="note-p">Заметки хранятся только на этом телефоне: ${notes.size} ${plural(notes.size, 'заметка', 'заметки', 'заметок')}${mb ? `, ${mb} МБ` : ''}. ${persisted ? 'Система не сотрёт их сама.' : standalone ? '' : 'Поставь приложение на экран «Домой» - так Safari не сотрёт заметки, если долго не открывать.'} Ничего не уходит в сеть.</p>
-      <p class="note-p"><a href="../" style="color:var(--warm)">Сайт Заметочек</a> · версия для Mac там же</p>`, root => {
+      <p class="note-p"><a href="../" style="color:var(--warm)">Сайт Заметочек</a> · версия для Mac там же · <b>версия ${APP_VERSION}</b></p>`, root => {
       root.addEventListener('click', e => {
         const sc = e.target.closest('[data-scale]');
         if (sc) {
