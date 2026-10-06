@@ -294,7 +294,7 @@ final class Store {
         }
     }
 
-    // MARK: перенос в списке слева
+       // MARK: перенос в списке слева
 
     /// Положить заметку внутрь parent (nil - наверх) перед before (nil - в конец).
     func move(_ id: String, into parent: String?, before: String? = nil) {
@@ -333,8 +333,17 @@ final class Store {
         expanded.insert(parent)
     }
 
-    // MARK: удаление
+    // MARK: tags
 
+    func removeTag(_ tag: String, from id: String) {
+        guard let i = index(id) else { return }
+        notes[i].doc.tags?.removeAll { $0 == tag }
+        if notes[i].doc.tags?.isEmpty == true { notes[i].doc.tags = nil }
+        notes[i].modified = Date()
+        scheduleSave(id)
+    }
+
+    // MARK: удаление
     /// Заметка и все её страницы уходят в Корзину - случайное удаление можно вернуть.
     func delete(_ id: String) {
         guard let note = note(id) else { return }
