@@ -333,7 +333,25 @@ final class Store {
         expanded.insert(parent)
     }
 
-    // MARK: tags
+      // MARK: tags
+
+    var allTags: [(tag: String, count: Int)] {
+        var counts: [String: Int] = [:]
+        for n in notes { for t in n.doc.tags ?? [] { counts[t, default: 0] += 1 } }
+        return counts.map { (tag: $0.key, count: $0.value) }.sorted { $0.tag < $1.tag }
+    }
+
+    func addTag(_ raw: String, to id: String) {
+        let tag = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "#")).lowercased()
+        guard !tag.isEmpty, let i = index(id) else { return }
+        var tags = notes[i].doc.tags ?? []
+        guard !tags.contains(tag) else { return }
+        tags.append(tag)
+        notes[i].doc.tags = tags
+        notes[i].modified = Date()
+        scheduleSave(id)
+    }
 
     func removeTag(_ tag: String, from id: String) {
         guard let i = index(id) else { return }
