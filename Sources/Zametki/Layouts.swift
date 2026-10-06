@@ -349,11 +349,6 @@ struct SearchField: View {
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.white.opacity(0.07)))
     }
 }
-VStack(spacing: 0) {
-    Color.clear.frame(height: 52)
-    TagBar(store: store)
-    Editor(store: store)
-}
 
 struct TagBar: View {
     let store: Store
