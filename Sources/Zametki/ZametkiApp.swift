@@ -389,7 +389,7 @@ struct NoteList: View {
         switch variant {
         case .quiet:
             VStack(alignment: .leading, spacing: 2) {
-                NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.currentStyle)
+                NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.style(of: note.id))
                 if depth == 0 {
                     let preview = note.preview.isEmpty ? "" : " · " + note.preview
                     Text(Self.when(note.modified) + preview)

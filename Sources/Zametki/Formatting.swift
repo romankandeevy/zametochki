@@ -23,6 +23,8 @@ extension NSAttributedString.Key {
     static let zLang = NSAttributedString.Key("z.lang")
     /// Таблица - ячейки JSON-строкой.
     static let zTable = NSAttributedString.Key("z.table")
+    /// Доска - рисунки и стикеры JSON-строкой.
+    static let zBoard = NSAttributedString.Key("z.board")
     /// Сворачиваемый список свёрнут (ставится на строку-заголовок).
     static let zCollapsed = NSAttributedString.Key("z.collapsed")
     /// Строка внутри свёрнутого списка - не рисуется. Вычисляется при отрисовке, в файл не идёт.
@@ -30,14 +32,14 @@ extension NSAttributedString.Key {
 
     static let inlineStyles: [NSAttributedString.Key] = [.zBold, .zItalic, .zUnderline, .zStrike, .zHighlight]
     /// Всё смысловое, что живёт рядом с внешним видом и переживает перерисовку.
-    static let semantic: [NSAttributedString.Key] = inlineStyles + [.zColor, .zBlock, .zPage, .zImage, .zImageWidth, .zFile, .zTable, .zLang,
+    static let semantic: [NSAttributedString.Key] = inlineStyles + [.zColor, .zBlock, .zPage, .zImage, .zImageWidth, .zFile, .zTable, .zBoard, .zLang,
                                                                   .zCollapsed, .zHidden, .attachment]
 }
 
 /// Тип абзаца.
 enum Block: String, CaseIterable {
     case text, title, heading, subheading, bullet, numbered, todo, done, toggle, toggleItem, quote, code
-    case page, divider, image, file, table
+    case page, divider, image, file, table, board
 
     var name: String {
         switch self {
@@ -57,6 +59,7 @@ enum Block: String, CaseIterable {
         case .image: "Картинка"
         case .file: "Файл"
         case .table: "Таблица"
+        case .board: "Доска"
         }
     }
 
@@ -77,6 +80,7 @@ enum Block: String, CaseIterable {
         case .image: "photo"
         case .file: "paperclip"
         case .table: "tablecells"
+        case .board: "scribble.variable"
         }
     }
 
@@ -98,6 +102,7 @@ enum Block: String, CaseIterable {
         case .image: ["картин", "фото", "image", "img", "изображ"]
         case .file: ["файл", "file"]
         case .table: ["табл", "table"]
+        case .board: ["доск", "whiteboard", "board", "рис", "холст", "скетч"]
         }
     }
 
@@ -109,7 +114,7 @@ enum Block: String, CaseIterable {
     var isList: Bool { [.bullet, .numbered, .todo, .done].contains(self) }
     var isHeading: Bool { [.title, .heading, .subheading].contains(self) }
     /// Строка-предмет: один символ-вложение (карточка, картинка, файл, таблица, разделитель).
-    var isObject: Bool { [.page, .divider, .image, .file, .table].contains(self) }
+    var isObject: Bool { [.page, .divider, .image, .file, .table, .board].contains(self) }
     /// Тип, который продолжается на следующей строке после Enter.
     var continues: Bool { isList || [.quote, .code, .toggleItem].contains(self) }
 
@@ -403,6 +408,7 @@ enum Formatting {
         var imageWidth: Double?
         var file: String?
         var table: String?
+        var board: String?
         var collapsed: Bool?
         var lang: String?
 
@@ -435,6 +441,7 @@ enum Formatting {
             if let width = run.imageWidth { attrs[.zImageWidth] = width }
             if let file = run.file { attrs[.zFile] = file }
             if let table = run.table { attrs[.zTable] = table }
+            if let board = run.board { attrs[.zBoard] = board }
             if let attachment = Objects.attachment(for: attrs) { attrs[.attachment] = attachment }
             out.addAttributes(attrs, range: range)
         }
@@ -461,6 +468,7 @@ enum Formatting {
             run.imageWidth = attrs[.zImageWidth] as? Double
             run.file = attrs[.zFile] as? String
             run.table = attrs[.zTable] as? String
+            run.board = attrs[.zBoard] as? String
             if attrs[.zCollapsed] != nil { run.collapsed = true }
             run.lang = attrs[.zLang] as? String
             let empty = Run(from: run.from, length: run.length)

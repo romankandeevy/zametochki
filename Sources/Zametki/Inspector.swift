@@ -70,6 +70,7 @@ extension Block {
         case .image: "С диска или перетащи файл"
         case .file: "Любой файл, лежит рядом"
         case .table: "Строки и столбцы"
+        case .board: "Рисунки, фигуры и стикеры"
         case .divider: "Линия, точки или лента"
         case .page: "Карточка вложенной страницы"
         }
@@ -93,7 +94,7 @@ extension Block {
     }
 
     static let basic: [Block] = [.text, .title, .heading, .subheading, .bullet, .numbered, .todo, .toggle, .quote, .code]
-    static let objects: [Block] = [.image, .file, .table, .divider, .page]
+    static let objects: [Block] = [.image, .file, .table, .board, .divider, .page]
 }
 
 private struct InsertTab: View {

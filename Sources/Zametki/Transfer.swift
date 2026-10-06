@@ -44,7 +44,7 @@ enum Transfer {
             case .toggle: "- "
             case .toggleItem: "  - "
             case .code: "    "
-            case .text, .page, .divider, .image, .file, .table: ""
+            case .text, .page, .divider, .image, .file, .table, .board: ""
             }
             if block.isObject {
                 lines.append(objectText(block, storage, range, markdown: true))
@@ -132,6 +132,10 @@ enum Transfer {
                 rows.insert("|" + Array(repeating: " --- |", count: table.columns).joined(), at: min(1, rows.count))
             }
             return rows.joined(separator: "\n")
+        case .board:
+            let board = Board(json: attrs[.zBoard] as? String ?? "")
+            let texts = board.items.filter { $0.holdsText }.map(\.text).filter { !$0.isEmpty }
+            return (markdown ? "*Доска*" : "[доска]") + (texts.isEmpty ? "" : ": " + texts.joined(separator: " · "))
         default:
             return ""
         }

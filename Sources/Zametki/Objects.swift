@@ -10,6 +10,7 @@ enum Objects {
         case .image: cell = (attrs[.zImage] as? String).map { ImageCell(name: $0, ratio: attrs[.zImageWidth] as? Double ?? ImageCell.defaultRatio) }
         case .file: cell = (attrs[.zFile] as? String).map { FileCell(name: $0) }
         case .table: cell = TableCell(json: attrs[.zTable] as? String ?? Table.empty.json)
+        case .board: cell = BoardCell(json: attrs[.zBoard] as? String ?? Board().json)
         case .divider: cell = DividerCell()
         default: cell = nil
         }
