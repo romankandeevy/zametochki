@@ -31,17 +31,19 @@ extension NSAttributedString.Key {
     static let zBoard = NSAttributedString.Key("z.board")
     /// Голосовая заметка - имя аудиофайла в папке вложений.
     static let zAudio = NSAttributedString.Key("z.audio")
+    /// Белая доска - рисунки, фигуры и стикеры JSON-строкой.
+    static let zWhiteboard = NSAttributedString.Key("z.whiteboard")
 
     static let inlineStyles: [NSAttributedString.Key] = [.zBold, .zItalic, .zUnderline, .zStrike, .zHighlight]
     /// Всё смысловое, что живёт рядом с внешним видом и переживает перерисовку.
     static let semantic: [NSAttributedString.Key] = inlineStyles + [.zColor, .zBlock, .zPage, .zImage, .zImageWidth, .zFile, .zTable, .zLang,
-                                                                  .zBoard, .zAudio, .zCollapsed, .zHidden, .attachment]
+                                                                  .zBoard, .zWhiteboard, .zAudio, .zCollapsed, .zHidden, .attachment]
 }
 
 /// Тип абзаца.
 enum Block: String, CaseIterable {
     case text, title, heading, subheading, bullet, numbered, todo, done, toggle, toggleItem, quote, code
-    case page, divider, image, file, table, board, audio
+    case page, divider, image, file, table, board, whiteboard, audio
     /// Не тип строки, а пункт меню «/»: выбор шаблона. В файл не попадает.
     case template
 
@@ -63,7 +65,8 @@ enum Block: String, CaseIterable {
         case .image: "Картинка"
         case .file: "Файл"
         case .table: "Таблица"
-        case .board: "Доска"
+        case .board: "Канбан"
+        case .whiteboard: "Доска"
         case .audio: "Голосовая заметка"
         case .template: "Шаблон"
         }
@@ -87,6 +90,7 @@ enum Block: String, CaseIterable {
         case .file: "paperclip"
         case .table: "tablecells"
         case .board: "rectangle.split.3x1"
+        case .whiteboard: "scribble.variable"
         case .audio: "waveform"
         case .template: "doc.on.doc"
         }
@@ -110,7 +114,8 @@ enum Block: String, CaseIterable {
         case .image: ["картин", "фото", "image", "img", "изображ"]
         case .file: ["файл", "file"]
         case .table: ["табл", "table"]
-        case .board: ["доск", "канбан", "kanban", "board"]
+        case .board: ["канбан", "kanban", "колонк"]
+        case .whiteboard: ["доск", "whiteboard", "board", "рис", "холст", "скетч"]
         case .audio: ["голос", "аудио", "запис", "audio", "voice"]
         case .template: ["шабл", "templ", "встреч", "план"]
         }
@@ -124,7 +129,7 @@ enum Block: String, CaseIterable {
     var isList: Bool { [.bullet, .numbered, .todo, .done].contains(self) }
     var isHeading: Bool { [.title, .heading, .subheading].contains(self) }
     /// Строка-предмет: один символ-вложение (карточка, картинка, файл, таблица, разделитель).
-    var isObject: Bool { [.page, .divider, .image, .file, .table, .board, .audio].contains(self) }
+    var isObject: Bool { [.page, .divider, .image, .file, .table, .board, .whiteboard, .audio].contains(self) }
     /// Тип, который продолжается на следующей строке после Enter.
     var continues: Bool { isList || [.quote, .code, .toggleItem].contains(self) }
 
@@ -422,6 +427,7 @@ enum Formatting {
         var collapsed: Bool?
         var lang: String?
         var board: String?
+        var whiteboard: String?
         var audio: String?
 
         /// То же оформление, без учёта места.
@@ -453,10 +459,20 @@ enum Formatting {
             if let width = run.imageWidth { attrs[.zImageWidth] = width }
             if let file = run.file { attrs[.zFile] = file }
             if let table = run.table { attrs[.zTable] = table }
-            if let board = run.board { attrs[.zBoard] = board }
+            if let board = run.board {
+                // Белые доски из ранней сборки лежали под ключом канбана - узнаём их по отсутствию колонок.
+                if board.contains("\"columns\"") { attrs[.zBoard] = board } else { attrs[.zWhiteboard] = board }
+            }
+            if let whiteboard = run.whiteboard { attrs[.zWhiteboard] = whiteboard }
             if let audio = run.audio { attrs[.zAudio] = audio }
             if let attachment = Objects.attachment(for: attrs) { attrs[.attachment] = attachment }
             out.addAttributes(attrs, range: range)
+        }
+        // Строка белой доски из ранней сборки помечена как канбан - чиним тип строки.
+        let ns = out.string as NSString
+        out.enumerateAttribute(.zWhiteboard, in: NSRange(location: 0, length: length)) { value, range, _ in
+            guard value != nil else { return }
+            out.addAttribute(.zBlock, value: Block.whiteboard.rawValue, range: ns.paragraphRange(for: range))
         }
         return out
     }
@@ -482,6 +498,7 @@ enum Formatting {
             run.file = attrs[.zFile] as? String
             run.table = attrs[.zTable] as? String
             run.board = attrs[.zBoard] as? String
+            run.whiteboard = attrs[.zWhiteboard] as? String
             run.audio = attrs[.zAudio] as? String
             if attrs[.zCollapsed] != nil { run.collapsed = true }
             run.lang = attrs[.zLang] as? String

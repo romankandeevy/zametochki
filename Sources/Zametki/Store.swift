@@ -419,18 +419,23 @@ final class Store {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
         guard let data = try? encoder.encode(note.doc) else { return }
-        backupIfShrinking(id, newText: note.doc.text)
+        backupIfShrinking(id, newText: note.doc.text, newSize: data.count)
         try? data.write(to: url(id), options: .atomic)
     }
 
-    /// Страховка: если заметка разом потеряла заметную часть текста, прошлая версия сначала кладётся
-    /// в Backups/<заметка>/<время>.json - её можно вернуть руками.
-    private func backupIfShrinking(_ id: String, newText: String) {
+    /// Страховка: если заметка разом потеряла заметную часть текста, предмет (доску, таблицу, картинку)
+    /// или файл резко похудел - прошлая версия сначала кладётся в Backups/<заметка>/<время>.json.
+    private func backupIfShrinking(_ id: String, newText: String, newSize: Int) {
         let file = url(id)
         guard let old = try? Data(contentsOf: file),
               let oldDoc = try? JSONDecoder().decode(Formatting.Doc.self, from: old) else { return }
         let lost = oldDoc.text.count - newText.count
-        guard lost >= 40 || (lost >= 12 && Double(newText.count) < Double(oldDoc.text.count) * 0.5) else { return }
+        let lostText = lost >= 40 || (lost >= 12 && Double(newText.count) < Double(oldDoc.text.count) * 0.5)
+        // Доска или таблица в тексте - один символ, но внутри может быть много работы.
+        let objects = { (text: String) in text.unicodeScalars.filter { $0 == "\u{FFFC}" }.count }
+        let lostObject = objects(newText) < objects(oldDoc.text)
+        let lostData = old.count - newSize >= 1500 && Double(newSize) < Double(old.count) * 0.6
+        guard lostText || lostObject || lostData else { return }
         let folder = self.folder.appendingPathComponent("Backups/\(id)", isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let formatter = DateFormatter()

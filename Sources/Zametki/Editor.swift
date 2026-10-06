@@ -471,6 +471,16 @@ struct Editor: NSViewRepresentable {
                 insertParagraphs([Formatting.object([.zBlock: Block.divider.rawValue])], at: boundary)
             case .board:
                 insertParagraphs([Formatting.object([.zBoard: Board.empty.json, .zBlock: Block.board.rawValue])], at: boundary)
+            case .whiteboard:
+                insertParagraphs([Formatting.object([.zWhiteboard: Whiteboard().json, .zBlock: Block.whiteboard.rawValue])], at: boundary)
+                // Новая доска сразу открывается - можно рисовать.
+                if let storage = textView?.textStorage {
+                    let caret = textView?.selectedRange().location ?? 0
+                    let from = max(0, caret - 3)
+                    if let index = (from..<min(caret + 1, storage.length)).last(where: { storage.attribute(.zWhiteboard, at: $0, effectiveRange: nil) != nil }) {
+                        DispatchQueue.main.async { [weak self] in self?.editWhiteboard(at: index) }
+                    }
+                }
             case .audio:
                 // Голосовая заметка: запись начинается сразу, плашка встанет, когда договоришь.
                 if let boundary { textView?.setSelectedRange(NSRange(location: boundary, length: 0)) }
@@ -554,6 +564,7 @@ struct Editor: NSViewRepresentable {
                 if let name = (attrs[.zImage] ?? attrs[.zFile]) as? String { NSWorkspace.shared.open(Assets.url(name)) }
             case .table: editTable(at: index)
             case .board: editBoard(at: index)
+            case .whiteboard: editWhiteboard(at: index)
             case .audio: (attrs[.zAudio] as? String).map { AudioPlayer.shared.toggle($0) }
             default: break
             }
@@ -612,6 +623,55 @@ struct Editor: NSViewRepresentable {
                 }
                 self.render()
                 self.textView?.needsDisplay = true
+            }
+        }
+
+        /// Открыть белую доску в своём окне. Номер доски - в её JSON: по нему правки находят её в заметке.
+        private func editWhiteboard(at index: Int) {
+            guard let storage = textView?.textStorage, index < storage.length else { return }
+            let json = storage.attribute(.zWhiteboard, at: index, effectiveRange: nil) as? String ?? ""
+            let board = Whiteboard(json: json)
+            // У первых досок номера не было - записываем его, чтобы окно потом нашло доску.
+            if !json.contains("\"id\"") { writeWhiteboard(board, at: index) }
+            let noteID = shownID
+            BoardWindow.show(board) { [weak self] edited in self?.saveWhiteboard(edited, noteID: noteID) }
+        }
+
+        private func writeWhiteboard(_ board: Whiteboard, at index: Int) {
+            guard let storage = textView?.textStorage, index < storage.length else { return }
+            let range = NSRange(location: index, length: 1)
+            // Правки доски - не в отмену заметки: у доски своя отмена в её окне. Иначе ⌘Z в заметке
+            // откатывал доску по шагу и в конце убирал её целиком.
+            textView?.undoManager?.disableUndoRegistration()
+            defer { textView?.undoManager?.enableUndoRegistration() }
+            changeAttributes(in: range) { storage in
+                storage.addAttribute(.zWhiteboard, value: board.json, range: range)
+                var attrs = storage.attributes(at: index, effectiveRange: nil)
+                attrs[.zWhiteboard] = board.json
+                if let attachment = Objects.attachment(for: attrs) { storage.addAttribute(.attachment, value: attachment, range: range) }
+            }
+            textView?.layoutManager?.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+            textView?.needsDisplay = true
+        }
+
+        /// Правка из окна доски. Заметка открыта - меняем на месте; уже другая - правим её файл.
+        func saveWhiteboard(_ board: Whiteboard, noteID: String?) {
+            let needle = "\"id\":\"\(board.id)\""
+            func find(in text: NSAttributedString) -> Int? {
+                var found: Int?
+                text.enumerateAttribute(.zWhiteboard, in: NSRange(location: 0, length: text.length)) { value, range, stop in
+                    if (value as? String)?.contains(needle) == true { found = range.location; stop.pointee = true }
+                }
+                return found
+            }
+            if noteID == shownID, let storage = textView?.textStorage {
+                guard let index = find(in: storage),
+                      storage.attribute(.zWhiteboard, at: index, effectiveRange: nil) as? String != board.json else { return }
+                writeWhiteboard(board, at: index)
+            } else if let noteID {
+                store.edit(noteID) { text in
+                    if let index = find(in: text) { text.addAttribute(.zWhiteboard, value: board.json, range: NSRange(location: index, length: 1)) }
+                }
             }
         }
 
@@ -783,7 +843,8 @@ struct Editor: NSViewRepresentable {
         }
 
         /// Для скриншотов и ролика: «-demoSelect 30,14» выделяет текст (появляется панель стилей),
-        /// «-demoType /» печатает в конце текста (открывается меню блоков). Срабатывает один раз при запуске.
+        /// «-demoType /» печатает в конце текста (открывается меню блоков), «-demoOpenObject 12» открывает
+        /// предмет на этом месте (таблицу, доску). Срабатывает один раз при запуске.
         private static var demoDone = false
         private func runDemoScript() {
             guard !Self.demoDone else { return }
@@ -791,12 +852,14 @@ struct Editor: NSViewRepresentable {
             let defaults = UserDefaults.standard
             let select = defaults.string(forKey: "demoSelect")
             let type = defaults.string(forKey: "demoType")
-            guard select != nil || type != nil else { return }
+            let open = defaults.object(forKey: "demoOpenObject") as? Int ?? (defaults.string(forKey: "demoOpenObject")).flatMap(Int.init)
+            guard select != nil || type != nil || open != nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
                 guard let textView = self?.textView else { return }
                 if let parts = select?.split(separator: ",").compactMap({ Int($0) }), parts.count == 2 {
                     textView.setSelectedRange(NSRange(location: parts[0], length: parts[1]))
                 }
+                if let open { self?.openObject(at: open) }
                 if let type {
                     let end = (textView.string as NSString).length
                     textView.setSelectedRange(NSRange(location: end, length: 0))
@@ -1561,7 +1624,7 @@ final class NotesTextView: NSTextView {
         case .toggle: "Сворачиваемый список"
         case .toggleItem: "Внутри списка"
         case .code: "Код"
-        case .page, .divider, .image, .file, .table, .board, .audio, .template: ""
+        case .page, .divider, .image, .file, .table, .board, .whiteboard, .audio, .template: ""
         }
         var hintAttrs = Formatting.visual(attrs)
         hintAttrs[.foregroundColor] = Style.text.withAlphaComponent(0.28)
@@ -2263,8 +2326,8 @@ final class GutterOverlay: NSView {
 struct NoteLabel: NSViewRepresentable {
     let text: String
     let alpha: CGFloat
-    /// Стиль открытой заметки: список пишется её шрифтом и цветом.
-    var style = PageStyle.current
+    /// Стиль самой этой заметки: её название в списке - её шрифтом, а не шрифтом открытой.
+    var style: PageStyle
 
     func makeNSView(context: Context) -> NSTextField {
         let field = NSTextField(labelWithString: "")
