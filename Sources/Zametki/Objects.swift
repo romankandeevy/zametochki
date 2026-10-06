@@ -11,6 +11,8 @@ enum Objects {
         case .file: cell = (attrs[.zFile] as? String).map { FileCell(name: $0) }
         case .table: cell = TableCell(json: attrs[.zTable] as? String ?? Table.empty.json)
         case .divider: cell = DividerCell()
+        case .board: cell = BoardCell(json: attrs[.zBoard] as? String ?? Board.empty.json)
+        case .audio: cell = (attrs[.zAudio] as? String).map { AudioCell(name: $0) }
         default: cell = nil
         }
         guard let cell else { return nil }

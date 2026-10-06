@@ -27,17 +27,23 @@ extension NSAttributedString.Key {
     static let zCollapsed = NSAttributedString.Key("z.collapsed")
     /// Строка внутри свёрнутого списка - не рисуется. Вычисляется при отрисовке, в файл не идёт.
     static let zHidden = NSAttributedString.Key("z.hidden")
+    /// Канбан-доска - колонки и карточки JSON-строкой.
+    static let zBoard = NSAttributedString.Key("z.board")
+    /// Голосовая заметка - имя аудиофайла в папке вложений.
+    static let zAudio = NSAttributedString.Key("z.audio")
 
     static let inlineStyles: [NSAttributedString.Key] = [.zBold, .zItalic, .zUnderline, .zStrike, .zHighlight]
     /// Всё смысловое, что живёт рядом с внешним видом и переживает перерисовку.
     static let semantic: [NSAttributedString.Key] = inlineStyles + [.zColor, .zBlock, .zPage, .zImage, .zImageWidth, .zFile, .zTable, .zLang,
-                                                                  .zCollapsed, .zHidden, .attachment]
+                                                                  .zBoard, .zAudio, .zCollapsed, .zHidden, .attachment]
 }
 
 /// Тип абзаца.
 enum Block: String, CaseIterable {
     case text, title, heading, subheading, bullet, numbered, todo, done, toggle, toggleItem, quote, code
-    case page, divider, image, file, table
+    case page, divider, image, file, table, board, audio
+    /// Не тип строки, а пункт меню «/»: выбор шаблона. В файл не попадает.
+    case template
 
     var name: String {
         switch self {
@@ -57,6 +63,9 @@ enum Block: String, CaseIterable {
         case .image: "Картинка"
         case .file: "Файл"
         case .table: "Таблица"
+        case .board: "Доска"
+        case .audio: "Голосовая заметка"
+        case .template: "Шаблон"
         }
     }
 
@@ -77,6 +86,9 @@ enum Block: String, CaseIterable {
         case .image: "photo"
         case .file: "paperclip"
         case .table: "tablecells"
+        case .board: "rectangle.split.3x1"
+        case .audio: "waveform"
+        case .template: "doc.on.doc"
         }
     }
 
@@ -98,6 +110,9 @@ enum Block: String, CaseIterable {
         case .image: ["картин", "фото", "image", "img", "изображ"]
         case .file: ["файл", "file"]
         case .table: ["табл", "table"]
+        case .board: ["доск", "канбан", "kanban", "board"]
+        case .audio: ["голос", "аудио", "запис", "audio", "voice"]
+        case .template: ["шабл", "templ", "встреч", "план"]
         }
     }
 
@@ -109,7 +124,7 @@ enum Block: String, CaseIterable {
     var isList: Bool { [.bullet, .numbered, .todo, .done].contains(self) }
     var isHeading: Bool { [.title, .heading, .subheading].contains(self) }
     /// Строка-предмет: один символ-вложение (карточка, картинка, файл, таблица, разделитель).
-    var isObject: Bool { [.page, .divider, .image, .file, .table].contains(self) }
+    var isObject: Bool { [.page, .divider, .image, .file, .table, .board, .audio].contains(self) }
     /// Тип, который продолжается на следующей строке после Enter.
     var continues: Bool { isList || [.quote, .code, .toggleItem].contains(self) }
 
@@ -323,6 +338,7 @@ enum Formatting {
         var runs: [(NSRange, [NSAttributedString.Key: Any])] = []
         storage.enumerateAttributes(in: all) { attrs, range, _ in runs.append((range, visual(attrs))) }
         for (range, attrs) in runs { storage.setAttributes(attrs, range: range) }
+        Reminders.highlight(storage)
         padCodeGroups(storage)
     }
 
@@ -405,6 +421,8 @@ enum Formatting {
         var table: String?
         var collapsed: Bool?
         var lang: String?
+        var board: String?
+        var audio: String?
 
         /// То же оформление, без учёта места.
         func sameLook(_ other: Run) -> Bool {
@@ -435,6 +453,8 @@ enum Formatting {
             if let width = run.imageWidth { attrs[.zImageWidth] = width }
             if let file = run.file { attrs[.zFile] = file }
             if let table = run.table { attrs[.zTable] = table }
+            if let board = run.board { attrs[.zBoard] = board }
+            if let audio = run.audio { attrs[.zAudio] = audio }
             if let attachment = Objects.attachment(for: attrs) { attrs[.attachment] = attachment }
             out.addAttributes(attrs, range: range)
         }
@@ -461,6 +481,8 @@ enum Formatting {
             run.imageWidth = attrs[.zImageWidth] as? Double
             run.file = attrs[.zFile] as? String
             run.table = attrs[.zTable] as? String
+            run.board = attrs[.zBoard] as? String
+            run.audio = attrs[.zAudio] as? String
             if attrs[.zCollapsed] != nil { run.collapsed = true }
             run.lang = attrs[.zLang] as? String
             let empty = Run(from: run.from, length: run.length)

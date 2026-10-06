@@ -37,6 +37,8 @@ struct SettingsView: View {
     @AppStorage("t9") private var t9 = true
     @AppStorage("smartPunctuation") private var smartPunctuation = false
     @AppStorage("floatOnTop") private var floatOnTop = false
+    @AppStorage("showStats") private var showStats = true
+    @AppStorage(QuickNote.settingKey) private var quickNote = true
 
     private var section: Section { Section(rawValue: sectionRaw) ?? .look }
 
@@ -82,6 +84,7 @@ struct SettingsView: View {
         .onChange(of: t9) { _, _ in Editor.Coordinator.active?.refreshSettings() }
         .onChange(of: spellCheck) { _, _ in Editor.Coordinator.active?.refreshSettings() }
         .onChange(of: smartPunctuation) { _, _ in Editor.Coordinator.active?.refreshSettings() }
+        .onChange(of: quickNote) { _, _ in QuickNote.shared.updateHotKey() }
         .onChange(of: floatOnTop) { _, on in
             for window in NSApp.windows where window.canBecomeMain {
                 window.level = on ? .floating : .normal
@@ -133,6 +136,13 @@ struct SettingsView: View {
             SettingsGroup(title: "Окно") {
                 Card {
                     SettingToggle(title: "Поверх всех окон", detail: "Заметки не прячутся за другими окнами", isOn: $floatOnTop)
+                    CardDivider()
+                    SettingToggle(title: "Счётчик слов", detail: "Слова и время чтения в правом нижнем углу. Нажми на него - режим фокуса", isOn: $showStats)
+                }
+            }
+            SettingsGroup(title: "Быстрая заметка", note: "Окошко поверх любой программы. Enter - и мысль уже в заметке «Входящие».") {
+                Card {
+                    SettingToggle(title: "\(QuickNote.shortcut) из любой программы", detail: "Работает, даже когда Заметочки в фоне", isOn: $quickNote)
                 }
             }
             SettingsGroup(title: "Стиль страниц", note: "Шрифт, фон и цвета меняются в «Аа» сверху справа. Там же - стиль по умолчанию и «ко всем заметкам».") { EmptyView() }
@@ -157,6 +167,17 @@ struct SettingsView: View {
                     SettingToggle(title: "Проверка орфографии", detail: "Подчёркивать слова с ошибками", isOn: $spellCheck)
                     CardDivider()
                     SettingToggle(title: "Тире и кавычки", detail: "«--» становится «—», кавычки - типографскими", isOn: $smartPunctuation)
+                }
+            }
+            SettingsGroup(title: "Напоминания", note: "Допиши к задаче время - в этот момент придёт уведомление. Отметил задачу - напоминание снимается.") {
+                Card {
+                    KeyRow(key: "@завтра 10:00", title: "Завтра в 10 утра")
+                    CardDivider()
+                    KeyRow(key: "@18:30", title: "Сегодня (или завтра, если уже поздно)")
+                    CardDivider()
+                    KeyRow(key: "@пт", title: "В ближайшую пятницу в 9:00")
+                    CardDivider()
+                    KeyRow(key: "@15.10 9:00", title: "В конкретный день")
                 }
             }
         case .voice:
@@ -185,6 +206,8 @@ struct SettingsView: View {
                     KeyRow(key: "Esc", title: "Отменить")
                     CardDivider()
                     KeyRow(key: "🎙", title: "Или кнопка микрофона сверху")
+                    CardDivider()
+                    KeyRow(key: "⌥⇧⌘D", title: "Голосовая заметка: запись с расшифровкой")
                 }
             }
         case .data:
@@ -230,6 +253,10 @@ struct SettingsView: View {
         ("⇧⌘L", "Чеклист"),
         ("⌥⌘P", "Страница внутри"),
         ("⇧⌘D", "Голосовой ввод"),
+        ("⌥⇧⌘D", "Голосовая заметка"),
+        ("⌃⌥N", "Быстрая заметка из любой программы"),
+        ("⇧⌘F", "Режим фокуса"),
+        ("⌥⌘K", "Канбан-доска"),
         ("⌘\\", "Список заметок"),
         ("⌥⌘↑  ⌥⌘↓", "Предыдущая, следующая"),
         ("⇧⌘C", "Скопировать заметку"),

@@ -43,6 +43,7 @@ struct Editor: NSViewRepresentable {
         Coordinator.active = context.coordinator
         text.layoutManager?.delegate = context.coordinator
         context.coordinator.connectDictation()
+        AudioPlayer.shared.onChange = { [weak text] in text?.needsDisplay = true }
         return scroll
     }
 
@@ -122,6 +123,8 @@ struct Editor: NSViewRepresentable {
                 textView.setSelectedRange(NSRange(location: (textView.string as NSString).length, length: 0))
                 textView.typingAttributes = self.attributesForTyping()
                 textView.window?.makeFirstResponder(textView)
+                self.applyFocus()
+                self.updateStats()
                 self.runDemoScript()
             }
             // Текст новой заметки ставим сразу: иначе первая буква, набранная во время анимации,
@@ -413,6 +416,8 @@ struct Editor: NSViewRepresentable {
                 replace(NSRange(location: at, length: typed), with: NSAttributedString(string: ""))
                 if block == .page {
                     makePage(at: at)
+                } else if block == .template {
+                    pickTemplate(at: at)
                 } else if block.isObject {
                     textView.setSelectedRange(NSRange(location: at, length: 0))
                     insert(block)
@@ -426,7 +431,9 @@ struct Editor: NSViewRepresentable {
                 let ns = textView.string as NSString
                 let safe = NSIntersectionRange(paragraph, NSRange(location: 0, length: ns.length))
                 let empty = ns.substring(with: safe).trimmingCharacters(in: .newlines).isEmpty
-                if empty, self.block(at: paragraph.location) == .text {
+                if block == .template {
+                    pickTemplate(at: min(paragraph.location, ns.length))
+                } else if empty, self.block(at: paragraph.location) == .text {
                     textView.setSelectedRange(NSRange(location: min(paragraph.location, ns.length), length: 0))
                     insert(block)
                 } else {
@@ -458,6 +465,14 @@ struct Editor: NSViewRepresentable {
                 insertParagraphs([Formatting.object([.zTable: Table.empty.json, .zBlock: Block.table.rawValue])], at: boundary)
             case .divider:
                 insertParagraphs([Formatting.object([.zBlock: Block.divider.rawValue])], at: boundary)
+            case .board:
+                insertParagraphs([Formatting.object([.zBoard: Board.empty.json, .zBlock: Block.board.rawValue])], at: boundary)
+            case .audio:
+                // Голосовая заметка: запись начинается сразу, плашка встанет, когда договоришь.
+                if let boundary { textView?.setSelectedRange(NSRange(location: boundary, length: 0)) }
+                Dictation.shared.toggleVoiceNote()
+            case .template:
+                pickTemplate(at: boundary ?? textView?.selectedRange().location ?? 0)
             default:
                 var attrs: [NSAttributedString.Key: Any] = [:]
                 if kind != .text { attrs[.zBlock] = kind.rawValue }
@@ -534,6 +549,8 @@ struct Editor: NSViewRepresentable {
             case .image, .file:
                 if let name = (attrs[.zImage] ?? attrs[.zFile]) as? String { NSWorkspace.shared.open(Assets.url(name)) }
             case .table: editTable(at: index)
+            case .board: editBoard(at: index)
+            case .audio: (attrs[.zAudio] as? String).map { AudioPlayer.shared.toggle($0) }
             default: break
             }
         }
@@ -574,6 +591,96 @@ struct Editor: NSViewRepresentable {
                     if let attachment = Objects.attachment(for: attrs) { storage.addAttribute(.attachment, value: attachment, range: range) }
                 }
             }
+        }
+
+        private func editBoard(at index: Int) {
+            guard let textView, let storage = textView.textStorage else { return }
+            let board = Board(json: storage.attribute(.zBoard, at: index, effectiveRange: nil) as? String ?? "")
+            BoardEditor.present(board, over: textView.window) { [weak self] edited in
+                guard let self, let storage = self.textView?.textStorage, index < storage.length,
+                      storage.attribute(.zBoard, at: index, effectiveRange: nil) != nil else { return }
+                let range = NSRange(location: index, length: 1)
+                self.changeAttributes(in: range) { storage in
+                    storage.addAttribute(.zBoard, value: edited.json, range: range)
+                    var attrs = storage.attributes(at: index, effectiveRange: nil)
+                    attrs[.zBoard] = edited.json
+                    if let attachment = Objects.attachment(for: attrs) { storage.addAttribute(.attachment, value: attachment, range: range) }
+                }
+                self.render()
+                self.textView?.needsDisplay = true
+            }
+        }
+
+        // MARK: шаблоны
+
+        /// Меню шаблонов у строки: выбранный шаблон встаёт на пустую строку или под непустую.
+        func pickTemplate(at location: Int) {
+            guard let textView, let layout = textView.layoutManager else { return }
+            let length = (textView.string as NSString).length
+            var line: NSRect
+            if location >= length {
+                line = layout.extraLineFragmentRect
+                if line.height == 0, length > 0 {
+                    line = layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: length - 1), effectiveRange: nil)
+                }
+            } else {
+                line = layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: location), effectiveRange: nil)
+            }
+            line = line.offsetBy(dx: textView.textContainerOrigin.x, dy: textView.textContainerOrigin.y)
+            let menu = NSMenu()
+            for template in Template.all {
+                let item = NSMenuItem(title: template.name, action: #selector(templatePicked(_:)), keyEquivalent: "")
+                item.target = self
+                item.image = NSImage(systemSymbolName: template.symbol, accessibilityDescription: nil)
+                item.representedObject = [template.id, location] as [Any]
+                menu.addItem(item)
+            }
+            menu.popUp(positioning: nil, at: NSPoint(x: line.minX, y: line.maxY + 4), in: textView)
+        }
+
+        @objc private func templatePicked(_ item: NSMenuItem) {
+            guard let info = item.representedObject as? [Any], let id = info.first as? String,
+                  let location = info.last as? Int, let template = Template.all.first(where: { $0.id == id }) else { return }
+            insertTemplate(template, at: location)
+        }
+
+        func insertTemplate(_ template: Template, at location: Int) {
+            guard let textView, let storage = textView.textStorage else { return }
+            let body = NSMutableAttributedString(attributedString: Formatting.attributed(template.doc()))
+            let ns = storage.string as NSString
+            let paragraph = paragraphRange(at: min(location, ns.length))
+            let content = ns.substring(with: paragraph).trimmingCharacters(in: .newlines)
+            let start: Int
+            if content.isEmpty, block(at: paragraph.location) == .text {
+                // Пустая строка - шаблон встаёт прямо на неё.
+                let ownNewline = ns.substring(with: paragraph).hasSuffix("\n")
+                if ownNewline { body.append(NSAttributedString(string: "\n", attributes: Self.lineEnd(of: body))) }
+                start = paragraph.location
+                replace(paragraph, with: body)
+            } else {
+                // Под непустой строкой. Перенос несёт тип строки, поэтому у каждого - атрибуты своей строки.
+                start = NSMaxRange(paragraph)
+                if start == ns.length, !ns.substring(with: paragraph).hasSuffix("\n") {
+                    let previous = ns.length > 0 ? storage.attributes(at: ns.length - 1, effectiveRange: nil) : [:]
+                    body.insert(NSAttributedString(string: "\n", attributes: previous.filter { $0.key != .attachment }), at: 0)
+                } else {
+                    body.append(NSAttributedString(string: "\n", attributes: Self.lineEnd(of: body)))
+                }
+                replace(NSRange(location: start, length: 0), with: body)
+            }
+            // Курсор - в конец первой строки шаблона (обычно это заголовок, его хочется дописать).
+            let inserted = (textView.string as NSString)
+            let first = inserted.paragraphRange(for: NSRange(location: min(start + (body.string.hasPrefix("\n") ? 1 : 0), inserted.length), length: 0))
+            let end = inserted.substring(with: first).hasSuffix("\n") ? NSMaxRange(first) - 1 : NSMaxRange(first)
+            textView.setSelectedRange(NSRange(location: end, length: 0))
+            textView.scrollRangeToVisible(first)
+            textView.window?.makeFirstResponder(textView)
+        }
+
+        /// Смысловые атрибуты последней буквы - для переноса строки, который её закрывает.
+        private static func lineEnd(of text: NSAttributedString) -> [NSAttributedString.Key: Any] {
+            guard text.length > 0 else { return [:] }
+            return text.attributes(at: text.length - 1, effectiveRange: nil).filter { $0.key != .attachment }
         }
 
         /// Если стиль уже у всего выделения - снимаем, иначе ставим. Без выделения - для того, что будет набрано.
@@ -793,6 +900,8 @@ struct Editor: NSViewRepresentable {
             // Живой текст диктовки не сохраняем - в файл попадёт только окончательный.
             if live == nil { store.update(id, doc: Formatting.doc(from: storage)) }
             textView.needsDisplay = true
+            applyFocus()
+            updateStats()
             if let candidate = slashCandidate {
                 slashCandidate = nil
                 slashAt = candidate
@@ -810,6 +919,48 @@ struct Editor: NSViewRepresentable {
             checkSlash()
             if plusParagraph != nil { closePlus() }
             updateBar()
+            applyFocus()
+            updateStats()
+        }
+
+        // MARK: счётчик слов и режим фокуса
+
+        /// Слова во всей заметке и в выделении - для плашки в углу.
+        private func updateStats() {
+            guard let textView else { return }
+            let text = textView.string
+            EditorStats.shared.words = EditorStats.count(text)
+            let selection = textView.selectedRange()
+            EditorStats.shared.selectedWords = selection.length > 0 && NSMaxRange(selection) <= (text as NSString).length
+                ? EditorStats.count((text as NSString).substring(with: selection)) : 0
+        }
+
+        /// Есть ли сейчас приглушённые строки - чтобы снять их, когда фокус выключат.
+        private var focusDimmed = false
+
+        /// Режим фокуса: всё, кроме абзаца с курсором, приглушено.
+        func applyFocus() {
+            guard let textView, let layout = textView.layoutManager, let storage = textView.textStorage else { return }
+            let all = NSRange(location: 0, length: storage.length)
+            let on = UserDefaults.standard.bool(forKey: "focusMode") && live == nil
+            guard on else {
+                if focusDimmed {
+                    layout.removeTemporaryAttribute(.foregroundColor, forCharacterRange: all)
+                    focusDimmed = false
+                    textView.needsDisplay = true
+                }
+                return
+            }
+            let current = NSIntersectionRange(paragraphRange(at: textView.selectedRange().location), all)
+            let dim = Style.text.withAlphaComponent(0.22)
+            let before = NSRange(location: 0, length: current.location)
+            let after = NSRange(location: NSMaxRange(current), length: storage.length - NSMaxRange(current))
+            if current.length > 0 { layout.removeTemporaryAttribute(.foregroundColor, forCharacterRange: current) }
+            for range in [before, after] where range.length > 0 {
+                layout.addTemporaryAttribute(.foregroundColor, value: dim, forCharacterRange: range)
+            }
+            focusDimmed = true
+            textView.needsDisplay = true
         }
 
         // MARK: меню «/»
@@ -899,6 +1050,7 @@ struct Editor: NSViewRepresentable {
             dictation.onLive = { [weak self] text in self?.showLive(text) }
             dictation.onFinal = { [weak self] text in self?.commitLive(text) }
             dictation.onCancel = { [weak self] in self?.dropLive() }
+            dictation.onVoiceNote = { [weak self] name, text in self?.commitVoice(name, text) }
         }
 
         /// Пока человек говорит: слова сразу в тексте, строчными и без знаков - так они не прыгают,
@@ -967,6 +1119,24 @@ struct Editor: NSViewRepresentable {
             textView.typingAttributes = current.attrs
             replace(NSRange(location: current.start, length: 0), with: NSAttributedString(string: lead + text, attributes: current.attrs))
             textView.window?.makeFirstResponder(textView)
+        }
+
+        /// Голосовая заметка готова: живой текст убираем, вместо него - плашка с записью и расшифровка под ней.
+        private func commitVoice(_ name: String, _ text: String) {
+            guard let textView, let storage = textView.textStorage else { return }
+            textView.isEditable = true
+            if let current = live {
+                textView.undoManager?.disableUndoRegistration()
+                storage.replaceCharacters(in: NSRange(location: current.start, length: (current.text as NSString).length), with: "")
+                textView.undoManager?.enableUndoRegistration()
+                live = nil
+                textView.setSelectedRange(NSRange(location: current.start, length: 0))
+                afterProgrammaticChange()
+            }
+            var pieces = [Formatting.object([.zAudio: name, .zBlock: Block.audio.rawValue])]
+            let spoken = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !spoken.isEmpty { pieces.append(NSAttributedString(string: spoken, attributes: Formatting.visual([:]))) }
+            insertParagraphs(pieces, at: nil)
         }
 
         private func dropLive() {
@@ -1383,7 +1553,7 @@ final class NotesTextView: NSTextView {
         case .toggle: "Сворачиваемый список"
         case .toggleItem: "Внутри списка"
         case .code: "Код"
-        case .page, .divider, .image, .file, .table: ""
+        case .page, .divider, .image, .file, .table, .board, .audio, .template: ""
         }
         var hintAttrs = Formatting.visual(attrs)
         hintAttrs[.foregroundColor] = Style.text.withAlphaComponent(0.28)

@@ -58,6 +58,7 @@ final class Store {
         if notes.isEmpty { create() } else { selectedID = children(of: nil).first?.id ?? notes.first?.id }
         // Запуск с «-openNote <id>» сразу открывает эту заметку (для скриншотов и ролика).
         if let id = UserDefaults.standard.string(forKey: "openNote"), note(id) != nil { select(id) }
+        Reminders.sync(self)
     }
 
     var selected: Note? { note(selectedID) }
@@ -287,10 +288,38 @@ final class Store {
     func append(_ paragraphs: NSAttributedString, to id: String) {
         edit(id) { text in
             if text.length > 0, !text.string.hasSuffix("\n") {
-                text.append(NSAttributedString(string: "\n"))
+                // Перенос закрывает последнюю строку и несёт её тип - иначе задача или заголовок стали бы текстом.
+                let last = text.attributes(at: text.length - 1, effectiveRange: nil).filter { $0.key != .attachment }
+                text.append(NSAttributedString(string: "\n", attributes: last))
             }
             text.append(paragraphs)
         }
+    }
+
+    // MARK: входящие
+
+    /// Заметка «Входящие» - сюда падают быстрые заметки. Нет - создаётся.
+    func inboxID() -> String {
+        if let id = UserDefaults.standard.string(forKey: "inboxNote"), note(id) != nil { return id }
+        if let found = notes.first(where: { $0.parent == nil && $0.title == "Входящие" }) {
+            UserDefaults.standard.set(found.id, forKey: "inboxNote")
+            return found.id
+        }
+        var doc = Formatting.Doc(text: "Входящие")
+        doc.runs = [Formatting.Run(from: 0, length: ("Входящие" as NSString).length, block: Block.title.rawValue)]
+        let id = create(doc: doc, open: false)
+        UserDefaults.standard.set(id, forKey: "inboxNote")
+        return id
+    }
+
+    /// Быстрая заметка - в конец «Входящих». Разметка в начале строки работает: «[] » - задача, «- » - список.
+    func appendToInbox(_ text: String) {
+        let source = text.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
+            line.hasPrefix("[] ") ? "[ ] " + line.dropFirst(3) : String(line)
+        }.joined(separator: "\n")
+        let id = inboxID()
+        append(Formatting.attributed(Formatting.fromMarkdown(source)), to: id)
+        say("Сохранено во «Входящие»")
     }
 
     // MARK: перенос в списке слева
@@ -382,6 +411,7 @@ final class Store {
         pendingSave[id]?.cancel()
         pendingSave[id] = nil
         write(id)
+        Reminders.sync(self)
     }
 
     private func write(_ id: String) {
