@@ -44,6 +44,10 @@ struct Editor: NSViewRepresentable {
         text.layoutManager?.delegate = context.coordinator
         context.coordinator.connectDictation()
         AudioPlayer.shared.onChange = { [weak text] in text?.needsDisplay = true }
+        // Текст прокрутился (в том числе сам, когда курсор ушёл за край) - меню «/» и «+» встаёт на место.
+        scroll.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(context.coordinator, selector: #selector(Coordinator.scrolled(_:)),
+                                               name: NSView.boundsDidChangeNotification, object: scroll.contentView)
         return scroll
     }
 
@@ -984,6 +988,10 @@ struct Editor: NSViewRepresentable {
             slashAt = nil
             slashQuery = ""
             textView?.needsDisplay = true
+        }
+
+        @objc func scrolled(_ notification: Notification) {
+            if menuOpen { updateBar() }
         }
 
         /// «+» слева от строки: меню блоков для неё.

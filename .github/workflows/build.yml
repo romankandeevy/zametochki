@@ -47,6 +47,7 @@ jobs:
           shot build/Zametki.app app-menu -uiLayout craft -inspectorShown YES -demoType /
           shot build/Main.app main-slash -uiLayout quiet -demoType /
           shot build/Zametki.app app-slash -uiLayout quiet -demoType /
+          shot build/Zametki.app app-slash-d -uiLayout quiet -demoType /д
           shot build/Zametki.app app-focus -uiLayout notebook -focusMode YES -demoSelect 40,10
       - name: Картинки экспорта
         if: always()
