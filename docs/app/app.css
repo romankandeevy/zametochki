@@ -74,6 +74,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .row .twist { width: 26px; height: 26px; flex: none; display: grid; place-items: center; color: var(--muted); border-radius: 8px; }
 .row .twist svg { width: 14px; height: 14px; stroke-width: 2.4; transition: transform .2s; }
 .row .twist.open svg { transform: rotate(90deg); }
+.notes.flat .row .twist { display: none; }
 .row .body { min-width: 0; flex: 1; text-align: left; }
 .row .t { display: block; font: 600 26px/1.15 var(--hand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row .m { display: block; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
@@ -99,18 +100,30 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .stats { position: absolute; right: 14px; bottom: calc(var(--safe-bottom) + 12px); z-index: 3; height: 28px; padding: 0 12px;
          border-radius: 14px; font: 500 12px/28px var(--ui); color: rgba(255,255,255,.7); font-variant-numeric: tabular-nums;
          background: rgba(0,0,0,.28);
-         background: color-mix(in srgb, var(--page-base) 82%, white 10%); border: 1px solid rgba(255,255,255,.1);
+         background: color-mix(in srgb, var(--page-base) 90%, white 10%); border: 1px solid rgba(255,255,255,.1);
          box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: opacity .2s; }
 .stats.focus::before { content: "◎ "; }
 .typing .stats { opacity: 0; pointer-events: none; }
 
 /* блоки */
 .blk { position: relative; min-height: 1.3em; }
-.blk .txt { outline: none; min-height: 1.3em; white-space: pre-wrap; overflow-wrap: anywhere; caret-color: currentColor; }
-.blk .txt:empty::before { content: attr(data-hint); color: currentColor; opacity: .28; pointer-events: none; }
+.blk .txt { outline: none; min-height: 1.3em; white-space: pre-wrap; overflow-wrap: anywhere; caret-color: transparent; }
+/* Свой курсор (рисует скрипт): на базовой линии строки и высотой с буквы - на любой строке. */
+.editor { position: relative; }
+.caret { position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px; background: var(--page-fg); pointer-events: none; z-index: 2; }
+.caret.blink { animation: caret-blink 1.05s steps(1) infinite; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+/* Подсказка пустой строки лежит поверх, а не в строке: курсор стоит в начале строки на её базовой линии,
+   ровно там, где встанут буквы, а не до или после серого текста. */
+.blk .txt { position: relative; }
+.blk .txt:empty::before { content: attr(data-hint); position: absolute; left: 0; top: 0; white-space: nowrap;
+                          color: currentColor; opacity: .28; pointer-events: none; }
 .blk .txt b, .blk .txt strong { -webkit-text-stroke: .5px currentColor; }
 .blk .txt mark { background: rgba(255,219,115,.32); color: inherit; border-radius: 3px; }
 .b-title { font-size: 1.55em; font-weight: 700; margin-top: .25em; line-height: 1.15; }
+/* Заголовок заметки - первая строка: отделён от текста тонкой линией, как на Mac. */
+.blk.is-title { margin-top: 0; padding-bottom: 10px; margin-bottom: 12px; }
+.blk.is-title::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; opacity: .16; pointer-events: none; }
 .b-heading { font-size: 1.3em; font-weight: 700; margin-top: .3em; line-height: 1.2; }
 .b-subheading { font-size: 1.12em; font-weight: 700; margin-top: .2em; }
 .b-bullet, .b-numbered, .b-todo, .b-done, .b-toggle, .b-toggleItem { padding-left: 30px; }
@@ -198,6 +211,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .kbar button { flex: none; width: 42px; height: 38px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-size: 17px; }
 .kbar button:active, .kbar button.on { background: rgba(255,255,255,.16); }
 .kbar .warm { stroke: var(--warm); }
+/* На заголовке тип строки не меняется и строка не двигается - эти кнопки погашены. */
+.kbar.on-title [data-act="title"], .kbar.on-title [data-act="todo"], .kbar.on-title [data-act="bullet"],
+.kbar.on-title [data-act="up"], .kbar.on-title [data-act="down"] { opacity: .3; pointer-events: none; }
 
 /* ── меню блоков над клавиатурой ── */
 .popup { position: fixed; left: 8px; right: 8px; bottom: 60px; z-index: 25; max-height: min(46%, 380px); overflow-y: auto;
