@@ -1003,7 +1003,7 @@ struct Editor: NSViewRepresentable {
             }
             render()
             // Пустая заметка: первое, что напечатаешь, - заголовок.
-            if storage.length == 0 { textView.typingAttributes = Formatting.visual([.zBlock: Block.title.rawValue]) }
+            if storage.length == 0 { textView.typingAttributes = Formatting.titleTyping() }
             if let range = pendingFade { startFade(range) }
             pendingFade = nil
             // Живой текст диктовки не сохраняем - в файл попадёт только окончательный.
@@ -1149,7 +1149,7 @@ struct Editor: NSViewRepresentable {
         private func attributesForTyping() -> [NSAttributedString.Key: Any] {
             guard let textView, let storage = textView.textStorage else { return Formatting.visual([:]) }
             let location = textView.selectedRange().location
-            if location == 0 { return Formatting.visual([.zBlock: Block.title.rawValue]) }
+            if location == 0 { return Formatting.titleTyping() }
             guard location <= storage.length else { return Formatting.visual([:]) }
             return storage.attributes(at: location - 1, effectiveRange: nil)
         }
@@ -1480,12 +1480,54 @@ final class NotesTextView: NSTextView {
         var rect = rect
         rect.origin.x += Self.caretShift
         rect.size.width = 2
-        // Палочка - высотой со строку текста, а не со всю строку с межстрочным отступом
-        // (на пустой строке иначе она тянулась далеко вниз).
+        // Палочка - ровно по буквам строки: от верха букв до низа, по её базовой линии, а не во всю
+        // строку с отступами сверху и снизу. Так на любой строке - в заголовке, в тексте, в списке.
         let font = typingAttributes[.font] as? NSFont ?? Style.font(Style.editorSize)
-        let height = ceil(font.ascender - font.descender)
-        if rect.height > height + 2 { rect.size.height = height }
+        if let baseline = caretBaseline() {
+            // Верх - чуть выше заглавных, низ - чуть ниже строки: у Caveat ascender/descender с большим запасом,
+            // и по ним палочка торчала над словом.
+            let top = max(rect.minY, baseline - font.capHeight * 1.2)
+            let bottom = min(rect.maxY, baseline + min(-font.descender, font.pointSize * 0.22))
+            if bottom > top { rect.origin.y = floor(top); rect.size.height = ceil(bottom - top) }
+        } else {
+            let height = ceil(font.ascender - font.descender)
+            if rect.height > height + 2 { rect.size.height = height }
+        }
         super.drawInsertionPoint(in: rect, color: color, turnedOn: flag)
+    }
+
+    /// Базовая линия строки с курсором - в координатах поля.
+    private func caretBaseline() -> CGFloat? {
+        guard let layout = layoutManager, let storage = textStorage else { return nil }
+        let caret = selectedRange().location
+        let ns = storage.string as NSString
+        var char: Int?
+        if caret < ns.length {
+            char = caret
+        } else if ns.length > 0, ns.character(at: ns.length - 1) != 10 {
+            char = ns.length - 1
+        }
+        if let char {
+            let glyph = layout.glyphIndexForCharacter(at: char)
+            let line = layout.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+            return textContainerOrigin.y + line.minY + layout.location(forGlyphAt: glyph).y
+        }
+        // Пустая последняя строка: своих букв нет - меряем, где встала бы буква с оформлением набора.
+        let extra = layout.extraLineFragmentRect
+        guard extra.height > 0 else { return nil }
+        return textContainerOrigin.y + extra.minY + Self.baselineOffset(typingAttributes)
+    }
+
+    /// Где базовая линия от верха строки, если в ней буквы с таким оформлением: раскладываем одну букву.
+    static func baselineOffset(_ attrs: [NSAttributedString.Key: Any]) -> CGFloat {
+        let storage = NSTextStorage(string: "З", attributes: attrs)
+        let layout = NSLayoutManager()
+        let container = NSTextContainer(size: NSSize(width: 1000, height: 1000))
+        layout.addTextContainer(container)
+        storage.addLayoutManager(layout)
+        layout.ensureLayout(for: container)
+        let line = layout.lineFragmentRect(forGlyphAt: 0, effectiveRange: nil)
+        return line.minY + layout.location(forGlyphAt: 0).y
     }
 
     /// Мигающий курсор стирается по старому прямоугольнику - расширяем его, чтобы не оставалось следов.
@@ -1678,7 +1720,13 @@ final class NotesTextView: NSTextView {
         hintAttrs.removeValue(forKey: .backgroundColor)
         let paragraphStyle = hintAttrs[.paragraphStyle] as? NSParagraphStyle
         let x = textContainerOrigin.x + (textContainer?.lineFragmentPadding ?? 5) + (paragraphStyle?.firstLineHeadIndent ?? 0)
-        let y = textContainerOrigin.y + line.minY + (paragraphStyle?.paragraphSpacingBefore ?? 0)
+        // Подсказка - на базовой линии строки, там же, где курсор и будущие буквы.
+        let font = hintAttrs[.font] as? NSFont ?? Style.font(Style.editorSize)
+        var y = textContainerOrigin.y + line.minY + Self.baselineOffset(attrs) - font.ascender
+        if paragraph.location < ns.length, paragraph.length > 0 {
+            let glyph = layout.glyphIndexForCharacter(at: paragraph.location)
+            y = textContainerOrigin.y + line.minY + layout.location(forGlyphAt: glyph).y - font.ascender
+        }
         NSAttributedString(string: hint, attributes: hintAttrs).draw(at: NSPoint(x: x, y: y))
     }
 
@@ -1696,11 +1744,15 @@ final class NotesTextView: NSTextView {
         Style.text.withAlphaComponent(0.16).setFill()
         NSRect(x: left, y: round(y), width: bounds.width - left * 2, height: 1).fill()
         guard content.isEmpty, (delegate as? Editor.Coordinator)?.menuOpen != true else { return }
-        var attrs = Formatting.visual([.zBlock: Block.title.rawValue])
+        var attrs = Formatting.titleTyping()
         attrs[.foregroundColor] = Style.text.withAlphaComponent(0.28)
         attrs.removeValue(forKey: .strokeWidth)
-        let line = layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: 0), effectiveRange: nil)
-        NSAttributedString(string: Block.title.name, attributes: attrs).draw(at: NSPoint(x: left, y: textContainerOrigin.y + line.minY))
+        // Подпись - на той же базовой линии, где встанут буквы заголовка.
+        let glyph = layout.glyphIndexForCharacter(at: 0)
+        let line = layout.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+        let baseline = textContainerOrigin.y + line.minY + layout.location(forGlyphAt: glyph).y
+        let font = attrs[.font] as? NSFont ?? Style.font(Style.editorSize)
+        NSAttributedString(string: Block.title.name, attributes: attrs).draw(at: NSPoint(x: left, y: baseline - font.ascender))
     }
 
     private func checkboxRect(_ mid: CGFloat, left: CGFloat) -> NSRect {

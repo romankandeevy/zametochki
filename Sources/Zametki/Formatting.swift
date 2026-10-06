@@ -306,6 +306,17 @@ enum Formatting {
     /// Отступ под заголовком заметки: дальше начинается её текст, между ними - тонкая линия (её рисует редактор).
     static let titleGap: CGFloat = 22
 
+    /// Набор на пустой строке заголовка: тот же вид, что у написанного заголовка (без отступа сверху).
+    static func titleTyping() -> [NSAttributedString.Key: Any] {
+        var attrs = visual([.zBlock: Block.title.rawValue])
+        if let style = (attrs[.paragraphStyle] as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle {
+            style.paragraphSpacingBefore = 0
+            style.paragraphSpacing = titleGap
+            attrs[.paragraphStyle] = style
+        }
+        return attrs
+    }
+
     private static func separateTitle(_ storage: NSTextStorage) {
         guard storage.length > 0 else { return }
         let first = (storage.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
