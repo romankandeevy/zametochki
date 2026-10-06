@@ -141,6 +141,8 @@ enum Reminders {
     }
 
     private static func schedule(_ items: [Item]) {
+        // Уведомления есть только у настоящего .app (не у «swift run» и тестов) - иначе система роняет процесс.
+        guard Bundle.main.bundleURL.pathExtension == "app" else { return }
         let center = UNUserNotificationCenter.current()
         let wanted = Set(items.map(\.id))
         center.getPendingNotificationRequests { requests in

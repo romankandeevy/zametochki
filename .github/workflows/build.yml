@@ -13,3 +13,14 @@ jobs:
         run: swift --version
       - name: Сборка
         run: swift build -c release --product Zametki
+      - name: Тесты
+        run: swift test
+        env:
+          ZAMETKI_ARTIFACTS: ${{ github.workspace }}/artifacts
+      - name: Картинки экспорта
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export
+          path: artifacts/
+          if-no-files-found: ignore
