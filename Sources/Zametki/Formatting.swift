@@ -383,6 +383,8 @@ enum Formatting {
         var order: Double?
         /// Стиль страницы; nil у старых заметок - стиль по умолчанию.
         var style: PageStyle?
+         /// Теги заметки; nil у старых заметок.
+        var tags: [String]?
     }
 
     /// Кусок текста с одинаковым оформлением. Позиции - в UTF-16, как в NSString.
