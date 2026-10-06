@@ -354,3 +354,31 @@ VStack(spacing: 0) {
     TagBar(store: store)
     Editor(store: store)
 }
+
+struct TagBar: View {
+    let store: Store
+    @State private var newTag = ""
+
+    var body: some View {
+        if let id = store.selectedID {
+            HStack(spacing: 6) {
+                ForEach(store.note(id)?.doc.tags ?? [], id: \.self) { tag in
+                    HStack(spacing: 4) {
+                        Text("#\(tag)")
+                        Button { store.removeTag(tag, from: id) } label: {
+                            Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
+                        }.buttonStyle(.plain)
+                    }
+                    .font(.system(size: 11.5))
+                    .padding(.horizontal, 8).frame(height: 22)
+                    .background(Capsule().fill(.white.opacity(0.12)))
+                }
+                TextField("+ tag", text: $newTag)
+                    .textFieldStyle(.plain).font(.system(size: 11.5)).frame(width: 70)
+                    .onSubmit { store.addTag(newTag, to: id); newTag = "" }
+                Spacer()
+            }
+            .padding(.horizontal, 24).frame(height: 28)
+        }
+    }
+}
