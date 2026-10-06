@@ -324,3 +324,39 @@ textarea.field { min-height: 90px; resize: vertical; font-family: var(--hand); f
 /* новые строки мягко проявляются */
 .appear { animation: appear .22s ease-out; }
 @keyframes appear { from { opacity: 0; transform: translateY(4px); } }
+
+/* ── белая доска ── */
+.wbprev { position: relative; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.05);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
+.wbprev canvas { display: block; width: 100%; }
+
+/* Окно доски - во весь экран, поверх всего. */
+.wb-open { overflow: hidden; }
+.wb { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--wb-bg, var(--blue));
+      color: #fff; font: 15px/1.3 var(--ui); touch-action: none; user-select: none; -webkit-user-select: none; }
+.wb-top { flex: none; display: flex; align-items: center; gap: 8px; padding: calc(var(--safe-top) + 6px) 10px 6px 12px; }
+.wb-done { font-weight: 700; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.14); }
+.wb-title { flex: 1; text-align: center; font: 700 22px/1 var(--hand); opacity: .85; }
+.wb-acts { display: flex; gap: 2px; }
+.wb-acts button { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; }
+.wb-acts button:disabled { opacity: .3; }
+.wb-canvas { flex: 1; min-height: 0; width: 100%; display: block; touch-action: none; }
+.wb-text { position: absolute; z-index: 3; margin: 0; padding: 0; border: 0; outline: 1px dashed rgba(140,190,255,.8);
+           background: transparent; resize: none; overflow: hidden; caret-color: currentColor; user-select: text; -webkit-user-select: text; }
+.wb-sel { position: absolute; z-index: 4; display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--panel);
+          box-shadow: 0 8px 20px rgba(0,0,0,.35); font: 600 13px/1 var(--ui); }
+.wb-sel button { height: 32px; padding: 0 10px; border-radius: 9px; background: rgba(255,255,255,.08); }
+.wb-sel button.del { color: var(--danger); }
+.wb-bottom { flex: none; padding: 6px 8px calc(var(--safe-bottom) + 6px);
+             background: color-mix(in srgb, var(--wb-bg, var(--blue)) 72%, black 28%); border-top: 1px solid rgba(255,255,255,.08); }
+.wb-props { display: flex; align-items: center; gap: 6px; padding: 2px 4px 8px; overflow-x: auto; scrollbar-width: none; }
+.wb-props::-webkit-scrollbar, .wb-tools::-webkit-scrollbar { display: none; }
+.wb-color { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.wb-color.on { box-shadow: 0 0 0 2px var(--wb-bg, var(--blue)), 0 0 0 4px #fff; }
+.wb-sep { flex: none; width: 1px; height: 22px; background: rgba(255,255,255,.2); margin: 0 4px; }
+.wb-width { flex: none; width: 34px; height: 30px; border-radius: 8px; display: grid; place-items: center; }
+.wb-width i { display: block; width: 18px; border-radius: 4px; background: #fff; }
+.wb-width.on { background: rgba(255,255,255,.18); }
+.wb-tools { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.wb-tools button { flex: none; width: 44px; height: 42px; border-radius: 11px; display: grid; place-items: center; color: rgba(255,255,255,.85); }
+.wb-tools button.on { background: rgba(255,255,255,.2); color: #fff; }
