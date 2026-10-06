@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Что нового — Заметочки</title>
+<meta name="description" content="История версий Заметочек для Mac и iPhone: что появилось и что исправлено.">
+<meta name="theme-color" content="#1D3594">
+<link rel="icon" href="icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --blue: #1D3594; --deep: #142670; --muted: rgba(255,255,255,.72); --line: rgba(255,255,255,.14); --warm: #ffdb73;
+          --hand: "Caveat", cursive; --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: linear-gradient(180deg, var(--blue), var(--deep)) fixed; color: #fff; font: 17px/1.55 var(--ui); -webkit-font-smoothing: antialiased; }
+  a { color: var(--warm); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  nav { display: flex; align-items: center; gap: 12px; padding: 18px 0; }
+  nav .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font: 700 30px/1 var(--hand); }
+  nav .brand img { width: 32px; height: 32px; }
+  nav .back { margin-left: auto; color: var(--muted); text-decoration: none; font-size: 15px; }
+  h1 { font: 700 clamp(48px, 8vw, 68px)/1 var(--hand); margin: 30px 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 36px; }
+  .release { position: relative; padding: 0 0 34px 28px; border-left: 2px solid var(--line); }
+  .release::before { content: ""; position: absolute; left: -7px; top: 10px; width: 12px; height: 12px; border-radius: 50%; background: var(--warm); }
+  .release.soon::before { background: transparent; box-shadow: inset 0 0 0 2px var(--warm); }
+  .release h2 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 4px; font: 700 40px/1.1 var(--hand); }
+  .release time, .tag { font: 600 13px/1 var(--ui); color: var(--muted); }
+  .tag { padding: 4px 9px; border-radius: 99px; background: rgba(255,219,115,.16); color: var(--warm); }
+  h3 { font: 600 13px/1 var(--ui); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 18px 0 6px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  li b { font-weight: 600; }
+  .dl { display: inline-block; margin-top: 12px; padding: 9px 16px; border-radius: 12px; background: #fff; color: var(--blue); font-weight: 700; text-decoration: none; font-size: 15px; }
+  footer { color: var(--muted); font-size: 14px; padding: 20px 0 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="./"><img src="icon.png" alt="">Заметочки</a>
+    <a class="back" href="./">← На сайт</a>
+  </nav>
+
+  <h1>Что нового</h1>
+  <p class="sub">Версии для Mac и что менялось в Заметочках для iPhone. Самое свежее — сверху.</p>
+
+  <section class="release soon">
+    <h2>1.1 <span class="tag">готовится</span></h2>
+    <h3>Новое</h3>
+    <ul>
+      <li><b>Белая доска</b> — <code>/доска</code>: бесконечный холст с карандашом, маркером, ластиком, фигурами, стрелками, которые держатся за фигуры, стикерами, надписями и картинками. На Mac и на iPhone, доски переходят между ними как есть.</li>
+      <li><b>Заголовок всегда наверху</b> — первая строка заметки всегда H1 и отделена линией, ниже — текст и блоки.</li>
+      <li><b>Канбан-доска</b> — <code>/канбан</code> или ⌥⌘K: колонки и карточки прямо в заметке.</li>
+      <li><b>Голосовые заметки</b> — запись с волной и расшифровкой, ⌥⇧⌘D.</li>
+      <li><b>Напоминания</b> — <code>@завтра 10:00</code>, <code>@пт</code>, <code>@15.10</code> в задаче.</li>
+      <li><b>Шаблоны</b> — встреча, план недели, идея проекта, дневник, покупки, проект с доской.</li>
+      <li><b>Экспорт страницы</b> в PDF и PNG и «Скопировать как картинку».</li>
+      <li><b>Режим фокуса</b> — кнопка-прицел рядом с «Аа» или ⇧⌘F: строка с курсором на светлой подложке, остальное приглушено.</li>
+      <li><b>Счётчик слов</b> и время чтения в углу.</li>
+      <li><b>Быстрая заметка</b> из любой программы — ⌃⌥N, во «Входящие».</li>
+    </ul>
+    <h3>Исправлено</h3>
+    <ul>
+      <li>Курсор теперь ровно по высоте букв на любой строке, в том числе в пустой цитате и списке.</li>
+      <li>Строка под заголовком больше не превращается во второй заголовок.</li>
+      <li>Меню «/» и «+» встаёт на место, когда текст прокручен.</li>
+      <li>Пустая задача в конце шаблона остаётся задачей.</li>
+    </ul>
+  </section>
+
+  <section class="release">
+    <h2>iPhone <span class="tag">открыть в Safari</span></h2>
+    <p style="margin:0;color:var(--muted)">Обновляется само при следующем открытии. Номер версии — в настройках.</p>
+    <h3>Версия 9 · 6 октября 2026</h3>
+    <ul><li>Кнопка фокуса в шапке и заметная подсветка строки в фокусе.</li></ul>
+    <h3>Версия 8</h3>
+    <ul><li>Белая доска: рисование пальцем, фигуры, стрелки, стикеры, картинки; два пальца — двигать и приближать.</li></ul>
+    <h3>Версия 7</h3>
+    <ul>
+      <li>Обязательный заголовок наверху, свой курсор по высоте букв.</li>
+      <li>Новая заметка сразу открывает клавиатуру; список ровно под шапкой; без белой вспышки при запуске.</li>
+    </ul>
+    <h3>Версии 1–6</h3>
+    <ul>
+      <li>Заметочки для iPhone: блоки, меню «/», канбан, голос, напоминания, шаблоны, стили страниц, работа без интернета.</li>
+      <li>Всё как на Mac: цвета и маркеры, код с подсветкой, файлы, картинка и PDF, «Входящие», прошлые версии.</li>
+      <li>Приложение на весь экран, обновления приходят сами, пустые заметки не копятся.</li>
+    </ul>
+  </section>
+
+  <section class="release">
+    <h2>1.0 <time datetime="2026-10-05">5 октября 2026</time></h2>
+    <ul>
+      <li>Первая версия: почерк Caveat, блоки без разметки, панель над выделением, меню «/» и «+».</li>
+      <li>Код с подсветкой, таблицы, картинки, файлы, страницы в страницах.</li>
+      <li>Свой стиль у каждой страницы, три вида интерфейса, голосовой ввод через FlowLocal.</li>
+      <li>Всё хранится только на Mac, резервные копии при резком уменьшении заметки.</li>
+    </ul>
+    <a class="dl" href="https://github.com/romankandeevy/zametochki/releases/tag/v1.0">Скачать 1.0</a>
+  </section>
+
+  <footer>Полная история изменений — на <a href="https://github.com/romankandeevy/zametochki/commits/main">GitHub</a>.</footer>
+</div>
+</body>
+</html>
