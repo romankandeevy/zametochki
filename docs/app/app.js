@@ -28,6 +28,7 @@
     template: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
     bell: '<svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.4 15.5A1 1 0 0 0 5.3 17h13.4a1 1 0 0 0 .9-1.5L18 12.6V9a6 6 0 0 0-6-6zM9.5 19a2.5 2.5 0 0 0 5 0"/></svg>',
     play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+    file: '<svg viewBox="0 0 24 24"><path d="M21 11.5 12.6 20a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg>',
     pause: '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>',
   };
 
@@ -46,6 +47,7 @@
   ];
   const OBJECTS = [
     ['image', 'Картинка', ICON.image, 'Из фото или камеры', ['картин', 'фото', 'image']],
+    ['file', 'Файл', ICON.file, 'Любой файл с телефона', ['файл', 'file', 'вложен']],
     ['board', 'Доска', ICON.board, 'Канбан: колонки и карточки', ['доск', 'канбан', 'board']],
     ['audio', 'Голосовая заметка', ICON.audio, 'Запись с расшифровкой', ['голос', 'аудио', 'запис', 'voice']],
     ['table', 'Таблица', ICON.table, 'Строки и столбцы', ['табл', 'table']],
@@ -53,7 +55,7 @@
     ['page', 'Страница', ICON.page, 'Страница внутри заметки', ['страниц', 'page']],
     ['template', 'Шаблон', ICON.template, 'Встреча, план недели, идея…', ['шабл', 'templ', 'встреч', 'план']],
   ];
-  const OBJECT_TYPES = new Set(['image', 'board', 'audio', 'table', 'divider', 'page']);
+  const OBJECT_TYPES = new Set(['image', 'file', 'board', 'audio', 'table', 'divider', 'page']);
   const isObject = b => OBJECT_TYPES.has(b.type);
   const CONTINUES = new Set(['bullet', 'numbered', 'todo', 'done', 'quote', 'toggleItem', 'code']);
   const SHORTCUTS = [['###', 'subheading'], ['##', 'heading'], ['#', 'title'], ['[ ]', 'todo'], ['[]', 'todo'],
@@ -61,6 +63,20 @@
   const HINTS = { text: 'Пиши… или нажми /', title: 'Заголовок', heading: 'Подзаголовок', subheading: 'Маленький заголовок',
     bullet: 'Пункт списка', numbered: 'Пункт списка', todo: 'Задача', done: 'Задача', toggle: 'Сворачиваемый список',
     toggleItem: 'Внутри списка', quote: 'Цитата', code: 'Код' };
+
+  // ───────── цвета текста и маркера (как на Mac) ─────────
+  const TEXT_COLORS = [['white', '#ffffff', 'Белый'], ['yellow', '#ffe07a', 'Жёлтый'], ['pink', '#ffa8cc', 'Розовый'], ['green', '#a3f0b8', 'Зелёный'],
+    ['sky', '#a3dbff', 'Голубой'], ['gray', '#a6a9b8', 'Серый'], ['orange', '#ffb873', 'Оранжевый'], ['lavender', '#ccbaff', 'Лавандовый'],
+    ['mint', '#99ffe0', 'Мятный'], ['peach', '#ffccb8', 'Персиковый'], ['lemon', '#fff79e', 'Лимонный'], ['coral', '#ff8f8f', 'Коралловый'], ['blue', '#94b8ff', 'Синий']];
+  const MARKS = [['yellow', 'rgba(255, 217, 77, 0.32)', 'Жёлтый'], ['green', 'rgba(89, 230, 128, 0.3)', 'Зелёный'], ['blue', 'rgba(89, 166, 255, 0.35)', 'Синий'],
+    ['pink', 'rgba(255, 115, 191, 0.32)', 'Розовый'], ['purple', 'rgba(166, 115, 255, 0.35)', 'Фиолетовый'], ['orange', 'rgba(255, 153, 64, 0.34)', 'Оранжевый'],
+    ['red', 'rgba(255, 77, 77, 0.34)', 'Красный'], ['gray', 'rgba(255, 255, 255, 0.18)', 'Серый']];
+  /// Браузер записывает цвет по-своему («rgba(255, 217, 77, 0.32)») - узнаём маркер по нормальной записи.
+  const markByColor = (() => {
+    const map = new Map(), probe = document.createElement('i');
+    for (const [key, c] of MARKS) { probe.style.backgroundColor = c; map.set(probe.style.backgroundColor, key); }
+    return color => { probe.style.backgroundColor = color; return map.get(probe.style.backgroundColor) || 'yellow'; };
+  })();
 
   // ───────── стили страниц (как на Mac) ─────────
   const COLORS = [['blue', '#1D3594'], ['navy', '#121a45'], ['violet', '#452e85'], ['forest', '#174538'], ['wine', '#541f33'],
@@ -72,19 +88,25 @@
     ['serif', 'С засечками', '"New York", ui-serif, Georgia, serif'], ['mono', 'Моно', 'var(--mono)'],
     ['rounded', 'Округлый', 'ui-rounded, "SF Pro Rounded", var(--ui)']];
   const defaultStyle = () => local.get('defaultStyle', { font: 'hand', bg: 'color:blue', bullet: 'dot' });
+  const textScale = () => local.get('scale', 1);
   function styleVars(style) {
     const s = style || defaultStyle();
     const [kind, id] = (s.bg || 'color:blue').split(':');
-    let bg, base;
+    let bg, base, bottom;
     if (kind === 'gradient') {
       const g = GRADIENTS.find(x => x[0] === id) || GRADIENTS[0];
-      bg = `linear-gradient(180deg, ${g[1]}, ${g[2]})`; base = g[1];
+      bg = `linear-gradient(180deg, ${g[1]}, ${g[2]})`; base = g[1]; bottom = g[2];
+    } else if (kind === 'image') {
+      base = '#14171f'; bg = base; bottom = base;
     } else {
-      base = (COLORS.find(x => x[0] === id) || COLORS[0])[1]; bg = base;
+      base = (COLORS.find(x => x[0] === id) || COLORS[0])[1]; bg = base; bottom = base;
     }
     const font = (FONTS.find(f => f[0] === s.font) || FONTS[0]);
     const hand = font[0] === 'hand';
-    return { bg, base, font: font[2], size: hand ? '27px' : '17.5px', line: hand ? 1.28 : 1.5, dash: s.bullet === 'dash' };
+    const text = (TEXT_COLORS.find(c => c[0] === s.text) || TEXT_COLORS[0])[1];
+    return { bg, base, bottom, font: font[2], fontKey: font[0], px: (hand ? 27 : 17.5) * textScale(), size: (hand ? 27 : 17.5) * textScale() + 'px',
+      line: hand ? 1.28 : 1.5, dash: s.bullet === 'dash', text, image: kind === 'image' ? id : null, cover: s.cover || null,
+      divider: s.divider || 'line', card: s.card || 'plain', wide: s.width === 'wide' };
   }
 
   // ───────── хранилище: IndexedDB ─────────
@@ -92,11 +114,12 @@
     db: null,
     open() {
       return new Promise((resolve, reject) => {
-        const req = indexedDB.open('zametochki', 1);
+        const req = indexedDB.open('zametochki', 2);
         req.onupgradeneeded = () => {
           const db = req.result;
-          db.createObjectStore('notes', { keyPath: 'id' });
-          db.createObjectStore('files', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('backups')) db.createObjectStore('backups', { keyPath: 'key' });
         };
         req.onsuccess = () => { this.db = req.result; resolve(); };
         req.onerror = () => reject(req.error);
@@ -128,15 +151,31 @@
   function previewOf(n) { return blocksText(n).map(t => t.trim()).filter(Boolean)[1] || ''; }
   const children = parent => [...notes.values()].filter(n => (n.parent || null) === parent).sort((a, b) => a.order - b.order);
 
+  const written = new Map(); // id → последняя записанная версия (JSON) - для резервных копий
+  const textLength = n => blocksText(n).join('\n').length + boardText(n).length;
+  function write(n) {
+    saveTimers.delete(n.id);
+    keepVersion(n);
+    DB.put('notes', n).catch(e => toast('Не сохранилось: ' + e.message));
+  }
+  /// Как на Mac: заметка разом потеряла заметную часть текста - прошлая версия кладётся в резервные.
+  function keepVersion(n) {
+    const prev = written.get(n.id);
+    const now = JSON.stringify(n);
+    written.set(n.id, now);
+    if (!prev) return;
+    const old = JSON.parse(prev), lost = textLength(old) - textLength(n);
+    if (!(lost >= 40 || (lost >= 12 && textLength(n) < textLength(old) * 0.5))) return;
+    DB.put('backups', { key: n.id + '@' + Date.now(), note: n.id, saved: Date.now(), data: old }).catch(() => {});
+  }
   function save(n, now = true) {
     n.modified = Date.now();
     clearTimeout(saveTimers.get(n.id));
-    const write = () => { saveTimers.delete(n.id); DB.put('notes', n).catch(e => toast('Не сохранилось: ' + e.message)); };
-    if (now) write(); else saveTimers.set(n.id, setTimeout(write, 250));
+    if (now) write(n); else saveTimers.set(n.id, setTimeout(() => write(n), 250));
     scheduleListRender();
     scheduleReminders();
   }
-  function flushSaves() { for (const [id, t] of saveTimers) { clearTimeout(t); const n = note(id); if (n) DB.put('notes', n); } saveTimers.clear(); }
+  function flushSaves() { for (const [id, t] of saveTimers) { clearTimeout(t); const n = note(id); if (n) write(n); } saveTimers.clear(); }
   addEventListener('pagehide', flushSaves);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flushSaves(); });
 
@@ -240,7 +279,6 @@
     if (open) openNote(open.dataset.open, true);
   });
   $('#search').addEventListener('input', e => { query = e.target.value; renderList(); });
-  $('#btn-new').addEventListener('click', () => newNote());
 
   // ───────── экраны ─────────
   const listScreen = $('#list'), noteScreen = $('#note'), editor = $('#editor'), scroller = $('#scroller');
@@ -297,9 +335,22 @@
     noteScreen.style.setProperty('--page-font', v.font);
     noteScreen.style.setProperty('--page-size', v.size);
     noteScreen.style.setProperty('--page-line', v.line);
+    noteScreen.style.setProperty('--page-fg', v.text);
     noteScreen.classList.toggle('dash', v.dash);
+    noteScreen.classList.toggle('wide', v.wide);
+    noteScreen.classList.toggle('div-dots', v.divider === 'dots');
+    noteScreen.classList.toggle('div-washi', v.divider === 'washi');
+    noteScreen.classList.toggle('cards-outline', v.card === 'outline');
+    noteScreen.classList.toggle('cards-filled', v.card === 'filled');
     $('#kbar').style.setProperty('--page-base', v.base);
     setThemeColor(v.base, v.bg);
+    // Своя картинка фоном - размытая и притемнённая; обложка - полосой сверху.
+    const img = $('#page-img'), cover = $('#cover');
+    img.style.backgroundImage = '';
+    if (v.image) fileURL(v.image).then(u => { if (u) img.style.backgroundImage = `url("${u}")`; });
+    cover.hidden = !v.cover;
+    cover.style.backgroundImage = '';
+    if (v.cover) fileURL(v.cover).then(u => { if (u) cover.style.backgroundImage = `url("${u}")`; });
   }
 
   // ───────── отрисовка заметки ─────────
@@ -319,7 +370,7 @@
     el.dataset.id = b.id;
     if (isObject(b)) {
       el.className = `blk obj b-${b.type}`;
-      el.innerHTML = objectHTML(b) + `<div class="objbar"><button data-obj="up" aria-label="Выше">↑</button><button data-obj="down" aria-label="Ниже">↓</button><button class="del" data-obj="del">Удалить</button></div>`;
+      el.innerHTML = objectHTML(b) + `<div class="objbar">${b.type === 'image' ? '<button data-obj="size">Размер</button>' : ''}<button data-obj="up" aria-label="Выше">↑</button><button data-obj="down" aria-label="Ниже">↓</button><button class="del" data-obj="del">Удалить</button></div>`;
       if (b.type === 'image') loadImage(b, el);
       if (b.type === 'audio') setupPlayer(b, el);
       return el;
@@ -375,12 +426,120 @@
       else if (b.type !== 'toggleItem') collapsed = false;
       el.classList.toggle('hidden-item', b.type === 'toggleItem' && collapsed);
       if (b.type === 'code') {
-        el.classList.toggle('first', (n.blocks[i - 1] || {}).type !== 'code');
+        const first = (n.blocks[i - 1] || {}).type !== 'code';
+        el.classList.toggle('first', first);
         el.classList.toggle('last', (n.blocks[i + 1] || {}).type !== 'code');
+        codeLine(n, b, el, i, first);
       }
       remindChip(b, el, now);
     });
   }
+
+  // ───────── код: язык, подсветка, «Скопировать» ─────────
+  /// Подряд идущие строки кода - один блок; язык (выбранный или угаданный) хранится на первой строке.
+  function codeGroup(n, i) {
+    let a = i, z = i;
+    while (a > 0 && n.blocks[a - 1].type === 'code') a--;
+    while (z < n.blocks.length - 1 && n.blocks[z + 1].type === 'code') z++;
+    return n.blocks.slice(a, z + 1);
+  }
+  function codeLine(n, b, el, i, first) {
+    const group = codeGroup(n, i);
+    const head = group[0];
+    const lang = head.lang || Code.detect(group.map(x => plainOf(x.html)).join('\n'));
+    let bar = el.querySelector('.codehead');
+    if (first) {
+      if (!bar) { bar = document.createElement('div'); bar.className = 'codehead'; bar.contentEditable = 'false'; el.prepend(bar); }
+      bar.innerHTML = `<span>КОД</span><button data-lang>${head.lang ? '' : 'Авто · '}${esc(Code.name(lang))} ▾</button><button data-copy>Скопировать</button>`;
+    } else if (bar) bar.remove();
+    const txt = el.querySelector('.txt');
+    if (document.activeElement !== txt) txt.innerHTML = Code.paint(plainOf(b.html), lang) || '';
+  }
+
+  const Code = {
+    langs: [['swift', 'Swift'], ['python', 'Python'], ['javascript', 'JavaScript'], ['typescript', 'TypeScript'], ['html', 'HTML'], ['css', 'CSS'],
+      ['json', 'JSON'], ['bash', 'Bash'], ['sql', 'SQL'], ['go', 'Go'], ['rust', 'Rust'], ['kotlin', 'Kotlin'], ['java', 'Java'], ['c', 'C'],
+      ['cpp', 'C++'], ['ruby', 'Ruby'], ['php', 'PHP'], ['plain', 'Текст']],
+    name(l) { return (this.langs.find(x => x[0] === l) || this.langs[this.langs.length - 1])[1]; },
+    /// Те же приметы, что на Mac.
+    detect(t) {
+      const has = s => t.includes(s);
+      if (has('import SwiftUI') || has('import Foundation') || (has('func ') && (has('let ') || has('var ')) && has('{')) || has('guard let')) return 'swift';
+      if (has('<html') || has('<div') || (has('</') && has('>') && has('<'))) return 'html';
+      if (has('#include')) return has('std::') || has('cout') || has('class ') ? 'cpp' : 'c';
+      if (has('<?php')) return 'php';
+      if (has('fn ') && (has('let mut') || has('->') || has('println!'))) return 'rust';
+      if (has('package main') || (has('func ') && has(':='))) return 'go';
+      if (has('fun ') && (has('val ') || has('println('))) return 'kotlin';
+      if (has('public class') || has('System.out') || has('public static void')) return 'java';
+      if ((has('def ') && has(':')) || (has('import ') && !has('{') && !has(';')) || (has('print(') && !has('{'))) return 'python';
+      if ((has('interface ') && has(': ')) || has(': string') || has(': number')) return 'typescript';
+      if (has('const ') || has('=>') || has('function ') || has('console.log') || (has('let ') && has(';'))) return 'javascript';
+      if (has('SELECT ') || (has('select ') && has(' from ')) || has('INSERT INTO') || has('CREATE TABLE')) return 'sql';
+      if (has('#!/bin/') || has('echo ') || has('$ ') || has('sudo ') || has('brew ') || (has('cd ') && !has('{'))) return 'bash';
+      const tt = t.trim();
+      if ((tt.startsWith('{') || tt.startsWith('[')) && has('":')) return 'json';
+      if (has('{') && has(':') && has(';') && !has('(')) return 'css';
+      if ((has('end') && has('def ')) || has('puts ')) return 'ruby';
+      return 'plain';
+    },
+    words: {
+      swift: 'func let var if else guard return struct class enum case switch for in while import private public static self Self true false nil init extension protocol some any async await throws try do catch where override final lazy weak default break continue repeat inout mutating',
+      python: 'def class if elif else for while in return import from as with try except finally raise lambda yield pass break continue and or not is None True False async await global self',
+      javascript: 'const let var function return if else for while of in new class extends import from export default async await try catch throw this true false null undefined typeof switch case break interface type implements enum public private readonly',
+      go: 'func package import var const type struct interface map chan go defer return if else for range switch case default nil true false break continue select',
+      rust: 'fn let mut pub struct enum impl trait use mod match if else for in while loop return self Self true false as ref move async await where const static crate',
+      kotlin: 'fun val var class object interface if else when for while return import package private public override null true false this in is data suspend',
+      java: 'public private protected class interface static final void int long double boolean new return if else for while import package extends implements this null true false try catch throw throws',
+      c: 'int char float double void long short unsigned const static struct return if else for while do switch case break continue include define typedef sizeof class public private namespace using new delete template auto nullptr true false std',
+      ruby: 'def end class module if elsif else unless do while return require self nil true false puts yield and or not attr_accessor',
+      php: 'function echo return if else foreach as class public private new array null true false use namespace',
+      sql: 'select from where insert into values update set delete create table drop alter join left right inner on and or not null order by group having limit as primary key distinct count',
+      bash: 'if then else fi for do done while case esac function return export echo cd sudo brew git npm local in',
+      css: 'important',
+    },
+    /// Раскраска одной строки: ключевые слова, типы, числа, строки, комментарии - как на Mac.
+    paint(text, lang) {
+      if (!text || lang === 'plain') return esc(text);
+      const kw = new Set((this.words[lang === 'typescript' ? 'javascript' : lang === 'cpp' ? 'c' : lang] || '').split(' '));
+      const col = new Array(text.length).fill('');
+      const mark = (re, cls) => { re.lastIndex = 0; let m; while ((m = re.exec(text))) { for (let i = m.index; i < m.index + m[0].length; i++) col[i] = cls; if (!m[0].length) re.lastIndex++; } };
+      if (lang === 'html') mark(/<\/?[A-Za-z][A-Za-z0-9-]*|\/?>/g, 'g');
+      if (lang === 'css') mark(/[a-z-]+(?=\s*:)/g, 't');
+      const words = /\b[A-Za-z_][A-Za-z0-9_]*\b/g;
+      let m;
+      while ((m = words.exec(text))) {
+        const w = m[0];
+        const cls = kw.has(lang === 'sql' ? w.toLowerCase() : w) ? 'k' : (/^[A-Z]/.test(w) && lang !== 'sql' && lang !== 'json') ? 't' : '';
+        if (cls) for (let i = m.index; i < m.index + w.length; i++) col[i] = cls;
+      }
+      mark(/\b\d+(?:\.\d+)?\b/g, 'n');
+      mark(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g, 's');
+      const lc = ['python', 'bash', 'ruby'].includes(lang) ? '#' : lang === 'sql' ? '--' : ['html', 'json', 'css'].includes(lang) ? null : '//';
+      if (lc) { const at = text.indexOf(lc); if (at >= 0 && col[at] !== 's') for (let i = at; i < text.length; i++) col[i] = 'c'; }
+      mark(/\/\*.*?\*\/|<!--.*?-->/g, 'c');
+      let out = '', i = 0;
+      while (i < text.length) {
+        let j = i + 1;
+        while (j < text.length && col[j] === col[i]) j++;
+        const piece = esc(text.slice(i, j));
+        out += col[i] ? `<span class="hl-${col[i]}">${piece}</span>` : piece;
+        i = j;
+      }
+      return out;
+    },
+  };
+  // В строке кода с курсором - простой текст (так печатать надёжно), в остальных - раскраска.
+  editor.addEventListener('focusin', e => {
+    const b = blockOfEl(e.target);
+    if (!b || b.type !== 'code' || !e.target.classList.contains('txt')) return;
+    const txt = e.target;
+    setTimeout(() => { const at = caretOffset(txt); if (txt.querySelector('span')) { txt.textContent = plainOf(b.html); placeCaret(txt, at); } }, 0);
+  });
+  editor.addEventListener('focusout', e => {
+    const b = blockOfEl(e.target);
+    if (b && b.type === 'code') setTimeout(decorate, 0);
+  });
 
   function remindChip(b, el, now = new Date()) {
     let chip = el.querySelector('.remind');
@@ -439,6 +598,7 @@
 
   // ───────── чистка HTML строки ─────────
   const TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', MARK: 'mark', BR: 'br', SPAN: 'span', FONT: 'span', A: 'a' };
+  const markTag = (key, inner) => key && key !== 'yellow' ? `<mark class="m-${key}">${inner}</mark>` : `<mark>${inner}</mark>`;
   function sanitize(html) {
     const t = document.createElement('template');
     t.innerHTML = html;
@@ -462,13 +622,14 @@
         if (st.fontStyle === 'italic') wrapped = `<i>${wrapped}</i>`;
         if ((st.textDecorationLine || st.textDecoration || '').includes('line-through')) wrapped = `<s>${wrapped}</s>`;
         const bg = st.backgroundColor;
-        if (bg && !/transparent|rgba\(0, 0, 0, 0\)/.test(bg)) wrapped = `<mark>${wrapped}</mark>`;
+        if (bg && !/transparent|rgba\(0, 0, 0, 0\)/.test(bg)) wrapped = markTag(markByColor(bg), wrapped);
         const color = st.color || n.getAttribute('color');
         if (color) wrapped = `<span style="color:${esc(color)}">${wrapped}</span>`;
         out += wrapped;
         continue;
       }
       if (tag === 'a') { const href = n.getAttribute('href') || ''; out += /^https?:/i.test(href) ? `<a href="${esc(href)}">${inner}</a>` : inner; continue; }
+      if (tag === 'mark') { const m = /\bm-([a-z]+)\b/.exec(n.className || ''); out += markTag(m && MARKS.some(x => x[0] === m[1]) ? m[1] : 'yellow', inner); continue; }
       out += `<${tag}>${inner}</${tag}>`;
     }
     return out;
@@ -490,6 +651,7 @@
     const i = n.blocks.indexOf(b);
     n.blocks.splice(i + 1, 0, nb);
     const el = renderBlock(nb);
+    el.classList.add('appear');
     elOf(b).after(el);
     return el;
   }
@@ -686,10 +848,17 @@
       save(note(openId));
       return;
     }
+    if (b.type === 'code' && e.target.closest('[data-copy]')) {
+      const n = note(openId), text = codeGroup(n, n.blocks.indexOf(b)).map(x => plainOf(x.html)).join('\n');
+      navigator.clipboard.writeText(text).then(() => { e.target.textContent = 'Скопировано'; setTimeout(decorate, 1200); }, () => toast('Не получилось скопировать'));
+      return;
+    }
+    if (b.type === 'code' && e.target.closest('[data-lang]')) return pickLanguage(b);
     if (!isObject(b)) return;
     const act = e.target.closest('[data-obj]');
     if (act) return objectAction(b, act.dataset.obj);
     if (b.type === 'page') return openNote(b.page, true);
+    if (b.type === 'file') return openFile(b);
     if (b.type === 'board') return boardClick(b, e);
     if (b.type === 'audio' && e.target.closest('.play')) return togglePlay(b);
     if (b.type === 'table' && e.target.closest('[data-tbl]')) return tableAction(b, e.target.closest('[data-tbl]').dataset.tbl);
@@ -712,6 +881,14 @@
   });
   function objectAction(b, act) {
     const n = note(openId), i = n.blocks.indexOf(b);
+    if (act === 'size') {
+      const sizes = [1, 0.75, 0.5, 0.35];
+      b.width = sizes[(sizes.indexOf(b.width || 1) + 1) % sizes.length];
+      const img = elOf(b).querySelector('img');
+      if (img) img.style.width = b.width * 100 + '%';
+      save(n);
+      return;
+    }
     if (act === 'del') {
       const saved = { b, i };
       removeBlock(b); decorate(); save(n);
@@ -759,6 +936,8 @@
     if (act === 'voice') return recordVoice(b);
     if (!b || isObject(b)) return;
     if (act === 'menu') return popupOpen() ? closePopup() : openPopup(b, '', false);
+    if (act === 'color') return popupOpen() ? closePopup() : openColors(b);
+    if (act === 'up' || act === 'down') return moveBlock(b, act === 'up' ? -1 : 1);
     if (['title', 'todo', 'bullet'].includes(act)) {
       const same = b.type === act || (act === 'todo' && b.type === 'done');
       setType(b, same ? 'text' : act);
@@ -777,12 +956,58 @@
       const r = sel.getRangeAt(0);
       const marks = [...elOf(b).querySelectorAll('mark, span[style*="background"]')].filter(m => r.intersectsNode(m));
       if (marks.length) { for (const m of marks) m.replaceWith(...m.childNodes); }
-      else { document.execCommand('styleWithCSS', false, true); document.execCommand('hiliteColor', false, 'rgba(255, 219, 115, 0.32)'); document.execCommand('styleWithCSS', false, false); }
+      else applyMark(local.get('lastMark', 'yellow'));
     } else {
       document.execCommand('styleWithCSS', false, false);
       document.execCommand({ bold: 'bold', italic: 'italic', strike: 'strikeThrough', underline: 'underline' }[kind]);
     }
     syncBlock(b, elOf(b));
+  }
+
+  /// Цвет текста у выделенного. Белый - снять цвет.
+  function applyColor(key) {
+    const b = currentBlock, sel = getSelection();
+    if (!b || sel.isCollapsed) return toast('Выдели слова - и выбери цвет');
+    const r = sel.getRangeAt(0);
+    for (const s of [...elOf(b).querySelectorAll('span[style*="color"], font[color]')].filter(x => r.intersectsNode(x) && !/background/.test(x.getAttribute('style') || ''))) s.replaceWith(...s.childNodes);
+    if (key !== 'white') {
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('foreColor', false, TEXT_COLORS.find(c => c[0] === key)[1]);
+      document.execCommand('styleWithCSS', false, false);
+    }
+    syncBlock(b, elOf(b));
+  }
+  /// Маркер выбранного цвета; null - снять маркер.
+  function applyMark(key) {
+    const b = currentBlock, sel = getSelection();
+    if (!b || sel.isCollapsed) return toast('Выдели слова - и выбери маркер');
+    const r = sel.getRangeAt(0);
+    for (const m of [...elOf(b).querySelectorAll('mark, span[style*="background"]')].filter(x => r.intersectsNode(x))) m.replaceWith(...m.childNodes);
+    if (key) {
+      local.set('lastMark', key);
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('hiliteColor', false, MARKS.find(x => x[0] === key)[1]);
+      document.execCommand('styleWithCSS', false, false);
+    }
+    syncBlock(b, elOf(b));
+  }
+  function openColors(b) {
+    popupFor = b; popupSlash = false; popupItems = [];
+    popup.innerHTML = `<div class="group">ЦВЕТ ТЕКСТА</div><div class="colors">${TEXT_COLORS.map(c => `<button class="tc" data-color="${c[0]}" style="color:${c[1]}" aria-label="${c[2]}">А</button>`).join('')}</div>
+      <div class="group">МАРКЕР</div><div class="colors">${MARKS.map(c => `<button class="mk" data-mark="${c[0]}" style="background:${c[1]}" aria-label="${c[2]}"></button>`).join('')}<button class="mk none" data-mark="" aria-label="Без маркера">✕</button></div>`;
+    popup.hidden = false;
+  }
+  /// Строку с курсором - выше или ниже; курсор едет вместе с ней.
+  function moveBlock(b, dir) {
+    const n = note(openId), i = n.blocks.indexOf(b), j = i + dir;
+    if (j < 0 || j >= n.blocks.length) return;
+    const el = elOf(b), txt = el.querySelector('.txt'), at = txt ? caretOffset(txt) : 0;
+    [n.blocks[i], n.blocks[j]] = [n.blocks[j], n.blocks[i]];
+    const other = elOf(n.blocks[i]);
+    if (dir < 0) other.before(el); else other.after(el);
+    decorate(); save(n);
+    if (txt) focusBlock(b, at);
+    el.scrollIntoView({ block: 'nearest' });
   }
 
   // ───────── меню блоков («/» и «+») ─────────
@@ -812,6 +1037,9 @@
     popup.querySelector('.item.on').scrollIntoView({ block: 'nearest' });
   }
   popup.addEventListener('click', e => {
+    const color = e.target.closest('[data-color]'), mark = e.target.closest('[data-mark]');
+    if (color) { applyColor(color.dataset.color); return closePopup(); }
+    if (mark) { applyMark(mark.dataset.mark || null); return closePopup(); }
     const it = e.target.closest('.item');
     if (!it) return;
     popupIndex = +it.dataset.i;
@@ -832,6 +1060,7 @@
     if (type === 'template') return pickTemplate(b);
     if (type === 'audio') return recordVoice(b);
     if (type === 'image') { pendingImageFor = b; $('#file-image').click(); return; }
+    if (type === 'file') { pendingImageFor = b; $('#file-any').click(); return; }
     if (type === 'page') return makePage(b);
     const ob = { id: uid(), type };
     if (type === 'board') ob.columns = emptyBoard();
@@ -878,7 +1107,8 @@
   function objectHTML(b) {
     switch (b.type) {
       case 'divider': return '';
-      case 'image': return '<img alt="Картинка">';
+      case 'image': return `<img alt="Картинка" style="width:${(b.width || 1) * 100}%">`;
+      case 'file': return `<div class="card">${ICON.file}<span class="cbody"><span class="ct">${esc(b.name || 'Файл')}</span><span class="cp">${fmtSize(b.size)} · открыть</span></span></div>`;
       case 'page': {
         const p = note(b.page);
         return `<div class="card">${ICON.page}<span class="cbody"><span class="ct">${esc(p ? titleOf(p) : 'Страница удалена')}</span>${p && previewOf(p) ? `<span class="cp">${esc(previewOf(p))}</span>` : ''}</span>${ICON.chevron}</div>`;
@@ -972,6 +1202,19 @@
     save(note(openId)); refreshObject(b);
   }
 
+  function pickLanguage(b) {
+    const n = note(openId), head = codeGroup(n, n.blocks.indexOf(b))[0];
+    openSheet(`<h3>Язык кода</h3><button class="item${!head.lang ? ' on' : ''}" data-l=""><span class="lbl">Авто</span></button>
+      ${Code.langs.map(l => `<button class="item${head.lang === l[0] ? ' on' : ''}" data-l="${l[0]}"><span class="lbl">${l[1]}</span></button>`).join('')}`, root => {
+      root.addEventListener('click', e => {
+        const it = e.target.closest('[data-l]');
+        if (!it) return;
+        if (it.dataset.l) head.lang = it.dataset.l; else delete head.lang;
+        save(n); decorate(); closeSheet();
+      });
+    });
+  }
+
   // ───────── картинки и файлы ─────────
   const urls = new Map();
   async function fileURL(id) {
@@ -1000,6 +1243,25 @@
       placeObject(b, { id: uid(), type: 'image', file: id }, empty);
     } catch (err) { toast('Не получилось вставить картинку'); }
   });
+  $('#file-any').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    const b = pendingImageFor;
+    pendingImageFor = null;
+    if (!file || !b) return;
+    const id = uid();
+    await DB.put('files', { id, blob: file, type: file.type, name: file.name });
+    const empty = !elOf(b).querySelector('.txt').textContent.trim();
+    placeObject(b, { id: uid(), type: 'file', file: id, name: file.name, size: file.size }, empty);
+  });
+  const fmtSize = n => !n ? '' : n < 1024 ? n + ' Б' : n < 1048576 ? Math.round(n / 1024) + ' КБ' : (n / 1048576).toFixed(1) + ' МБ';
+  /// Файл открывается через «Поделиться»: оттуда - в «Файлы», в нужную программу или в мессенджер.
+  async function openFile(b) {
+    const f = await DB.get('files', b.file);
+    if (!f) return toast('Файл не найден');
+    shareFile(new File([f.blob], b.name || 'файл', { type: f.type || 'application/octet-stream' }));
+  }
+
   /// Фото с телефона огромные - уменьшаем до 1600 точек по длинной стороне.
   async function shrinkImage(file) {
     const bitmap = await createImageBitmap(file).catch(() => null);
@@ -1308,7 +1570,10 @@
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
       if (/^```/.test(line)) {
+        const lang = line.slice(3).trim().toLowerCase();
+        const start = out.length;
         for (i++; i < lines.length && !/^```/.test(lines[i]); i++) out.push({ id: uid(), type: 'code', html: esc(lines[i]) });
+        if (out[start] && Code.langs.some(l => l[0] === lang)) out[start].lang = lang;
         continue;
       }
       if (/^\s*(---|\*\*\*|———)\s*$/.test(line)) { out.push({ id: uid(), type: 'divider' }); continue; }
@@ -1373,10 +1638,11 @@
         case 'code': {
           // Подряд идущие строки кода - один блок ``` … ```.
           const first = (n.blocks[i - 1] || {}).type !== 'code', last = (n.blocks[i + 1] || {}).type !== 'code';
-          return (first ? '```\n' : '') + plainOf(b.html) + (last ? '\n```' : '');
+          return (first ? '```' + (b.lang && b.lang !== 'plain' ? b.lang : '') + '\n' : '') + plainOf(b.html) + (last ? '\n```' : '');
         }
         case 'divider': return '---';
         case 'image': return '[картинка]';
+        case 'file': return `[файл: ${b.name || ''}]`;
         case 'audio': return '[голосовая заметка]';
         case 'page': return '📄 ' + (note(b.page) ? titleOf(note(b.page)) : 'Страница');
         case 'board': return b.columns.map(c => [`**${c.title}**`, ...c.cards.map(k => '- ' + k.text)].join('\n')).join('\n\n');
@@ -1521,34 +1787,50 @@
   }
   scrim.addEventListener('click', () => closeSheet());
 
+  let stylePick = null; // что выбираем из фото: обложку или фон
   $('#btn-style').addEventListener('click', () => {
     const n = note(openId);
     if (!n) return;
+    const chip = (key, value, cur, label, extra = '') => `<button class="chip${cur === value ? ' on' : ''}" data-k="${key}" data-v="${value}"${extra}>${label}</button>`;
     const draw = () => {
       const s = n.style || defaultStyle();
       return `<h3>Стиль страницы</h3>
-        <div class="group">ШРИФТ</div><div class="chips">${FONTS.map(f => `<button class="chip${s.font === f[0] ? ' on' : ''}" data-font="${f[0]}" style="font-family:${f[2]}">${f[1]}</button>`).join('')}</div>
-        <div class="group">ФОН</div><div class="swatches">${COLORS.map(c => `<button class="swatch${s.bg === 'color:' + c[0] ? ' on' : ''}" data-bg="color:${c[0]}" style="background:${c[1]}" aria-label="${c[0]}"></button>`).join('')}
-        ${GRADIENTS.map(g => `<button class="swatch${s.bg === 'gradient:' + g[0] ? ' on' : ''}" data-bg="gradient:${g[0]}" style="background:linear-gradient(${g[1]},${g[2]})" aria-label="${g[0]}"></button>`).join('')}</div>
-        <div class="group">МАРКЕР СПИСКА</div><div class="chips"><button class="chip${s.bullet !== 'dash' ? ' on' : ''}" data-bullet="dot">• Точка</button><button class="chip${s.bullet === 'dash' ? ' on' : ''}" data-bullet="dash">– Тире</button></div>
+        <div class="group">ШРИФТ</div><div class="chips">${FONTS.map(f => chip('font', f[0], s.font || 'hand', f[1], ` style="font-family:${f[2]}"`)).join('')}</div>
+        <div class="group">ФОН</div><div class="swatches">${COLORS.map(c => `<button class="swatch${s.bg === 'color:' + c[0] ? ' on' : ''}" data-k="bg" data-v="color:${c[0]}" style="background:${c[1]}" aria-label="${c[0]}"></button>`).join('')}
+        ${GRADIENTS.map(g => `<button class="swatch${s.bg === 'gradient:' + g[0] ? ' on' : ''}" data-k="bg" data-v="gradient:${g[0]}" style="background:linear-gradient(${g[1]},${g[2]})" aria-label="${g[0]}"></button>`).join('')}</div>
+        <div class="btns"><button class="btn" data-pick="bg">${(s.bg || '').startsWith('image:') ? 'Другое фото фоном' : 'Своё фото фоном'}</button>${s.cover ? '<button class="btn" data-nocover>Убрать обложку</button>' : '<button class="btn" data-pick="cover">Обложка</button>'}</div>
+        <div class="group">ЦВЕТ ТЕКСТА</div><div class="colors">${TEXT_COLORS.map(c => `<button class="tc${(s.text || 'white') === c[0] ? ' on' : ''}" data-k="text" data-v="${c[0]}" style="color:${c[1]}" aria-label="${c[2]}">А</button>`).join('')}</div>
+        <div class="group">МАРКЕР СПИСКА</div><div class="chips">${chip('bullet', 'dot', s.bullet || 'dot', '• Точка')}${chip('bullet', 'dash', s.bullet || 'dot', '– Тире')}</div>
+        <div class="group">РАЗДЕЛИТЕЛЬ</div><div class="chips">${chip('divider', 'line', s.divider || 'line', 'Линия')}${chip('divider', 'dots', s.divider || 'line', 'Точки')}${chip('divider', 'washi', s.divider || 'line', 'Лента')}</div>
+        <div class="group">КАРТОЧКИ СТРАНИЦ И ФАЙЛОВ</div><div class="chips">${chip('card', 'plain', s.card || 'plain', 'Простые')}${chip('card', 'outline', s.card || 'plain', 'С рамкой')}${chip('card', 'filled', s.card || 'plain', 'Яркие')}</div>
+        <div class="group">ШИРИНА (НА IPAD)</div><div class="chips">${chip('width', 'regular', s.width || 'regular', 'Обычная')}${chip('width', 'wide', s.width || 'regular', 'Широкая')}</div>
         <div class="btns"><button class="btn" data-default>Для новых заметок</button><button class="btn" data-all>Ко всем заметкам</button></div>`;
     };
+    const apply = s => { n.style = s; save(n); applyStyle(s); $('#sheet-body').innerHTML = draw(); };
     openSheet(draw(), root => {
       root.addEventListener('click', e => {
-        const s = { ...(n.style || defaultStyle()) };
         const t = e.target.closest('button');
         if (!t) return;
-        if (t.dataset.font) s.font = t.dataset.font;
-        if (t.dataset.bg) s.bg = t.dataset.bg;
-        if (t.dataset.bullet) s.bullet = t.dataset.bullet;
+        const s = { ...(n.style || defaultStyle()) };
+        if (t.dataset.k) s[t.dataset.k] = t.dataset.v;
+        if (t.dataset.pick) { stylePick = { note: n, what: t.dataset.pick }; $('#file-style').click(); return; }
+        if ('nocover' in t.dataset) delete s.cover;
         if ('default' in t.dataset) { local.set('defaultStyle', s); toast('Новые заметки будут в этом стиле'); }
         if ('all' in t.dataset) { for (const x of notes.values()) { x.style = { ...s }; save(x); } toast('Стиль - у всех заметок'); }
-        n.style = s;
-        save(n);
-        applyStyle(s);
-        root.innerHTML = draw();
+        apply(s);
       });
     });
+    $('#file-style').onchange = async e => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file || !stylePick) return;
+      const blob = await shrinkImage(file), id = uid();
+      await DB.put('files', { id, blob, type: blob.type });
+      const s = { ...(stylePick.note.style || defaultStyle()) };
+      if (stylePick.what === 'cover') s.cover = id; else s.bg = 'image:' + id;
+      stylePick = null;
+      apply(s);
+    };
   });
 
   $('#btn-more').addEventListener('click', () => {
@@ -1559,17 +1841,28 @@
       <button class="item" data-a="focus"><span class="ic">◎</span><span class="lbl">${focus ? 'Выключить режим фокуса' : 'Режим фокуса'}<small>Всё, кроме строки, которую пишешь, приглушено</small></span></button>
       <button class="item" data-a="template"><span class="ic">${ICON.template}</span><span class="lbl">Вставить шаблон</span></button>
       <button class="item" data-a="page"><span class="ic">${ICON.page}</span><span class="lbl">Новая страница внутри</span></button>
+      <button class="item" data-a="move"><span class="ic">⇄</span><span class="lbl">Переместить<small>Внутрь другой заметки, наверх, выше или ниже</small></span></button>
       <div class="group">ПОДЕЛИТЬСЯ</div>
+      <button class="item" data-a="png"><span class="ic">${ICON.image}</span><span class="lbl">Картинкой<small>Страница целиком - как она выглядит</small></span></button>
+      <button class="item" data-a="copyimg"><span class="ic">⧉</span><span class="lbl">Скопировать картинкой<small>Вставить в мессенджер</small></span></button>
+      <button class="item" data-a="pdf"><span class="ic">PDF</span><span class="lbl">PDF<small>Фон, почерк, галочки - как на экране</small></span></button>
       <button class="item" data-a="share"><span class="ic">↗</span><span class="lbl">Отправить текстом</span></button>
       <button class="item" data-a="md"><span class="ic">MD</span><span class="lbl">Сохранить в Markdown<small>Откроется и на Mac: «⋯ → Импорт»</small></span></button>
       <button class="item" data-a="copy"><span class="ic">⧉</span><span class="lbl">Скопировать текст</span></button>
       <div class="group"></div>
+      <button class="item" data-a="versions"><span class="ic">↺</span><span class="lbl">Прошлые версии<small>Если текст случайно стёрся</small></span></button>
       <button class="item danger" data-a="delete"><span class="ic">✕</span><span class="lbl">Удалить заметку</span></button>`, root => {
       root.addEventListener('click', async e => {
         const a = e.target.closest('[data-a]');
         if (!a) return;
         const act = a.dataset.a;
+        // Картинку в буфер кладём прямо в нажатии - иначе iPhone не разрешит.
+        if (act === 'copyimg') return copyPageImage(n);
         closeSheet();
+        if (act === 'png') return exportPage(n, 'png');
+        if (act === 'pdf') return exportPage(n, 'pdf');
+        if (act === 'move') return moveSheet(n);
+        if (act === 'versions') return versionsSheet(n);
         if (act === 'focus') { editor.classList.toggle('focus-mode'); local.set('focus', editor.classList.contains('focus-mode')); updateStats(); }
         if (act === 'template') pickTemplate(lastTextBlock());
         if (act === 'page') { const last = lastTextBlock(); const nb = { id: uid(), type: 'text', html: '' }; insertAfter(n.blocks[n.blocks.length - 1], nb); makePage(nb); void last; }
@@ -1593,6 +1886,9 @@
     openSheet(`<h3>Настройки</h3>
       <div class="toggle-row"><span>Звук печати<small>Мягкий щелчок на каждую букву</small></span>${sw('sound', local.get('sound', true))}</div>
       <div class="toggle-row"><span>Счётчик слов<small>Слова и время чтения в углу заметки</small></span>${sw('stats', local.get('stats', true))}</div>
+      <div class="group">РАЗМЕР ТЕКСТА</div>
+      <div class="chips">${[['Мелкий', 0.88], ['Обычный', 1], ['Крупный', 1.15], ['Огромный', 1.3]].map(([t, v]) => `<button class="chip${textScale() === v ? ' on' : ''}" data-scale="${v}">${t}</button>`).join('')}</div>
+      <p class="note-p">Быстрая заметка: кнопка с лотком в списке или долгое нажатие на «+». Голосом - микрофон на клавиатуре iPhone.</p>
       <div class="group">С MAC И НА MAC</div>
       <button class="item" data-a="import"><span class="ic">↓</span><span class="lbl">Открыть файлы<small>.md, .txt, заметки .json с Мака, резервная копия</small></span></button>
       <button class="item" data-a="md"><span class="ic">MD</span><span class="lbl">Все заметки в Markdown<small>На Mac: «⋯ → Импорт»</small></span></button>
@@ -1602,6 +1898,13 @@
       <p class="note-p">Заметки хранятся только на этом телефоне: ${notes.size} ${plural(notes.size, 'заметка', 'заметки', 'заметок')}${mb ? `, ${mb} МБ` : ''}. ${persisted ? 'Система не сотрёт их сама.' : standalone ? '' : 'Поставь приложение на экран «Домой» - так Safari не сотрёт заметки, если долго не открывать.'} Ничего не уходит в сеть.</p>
       <p class="note-p"><a href="../" style="color:var(--warm)">Сайт Заметочек</a> · версия для Mac там же</p>`, root => {
       root.addEventListener('click', e => {
+        const sc = e.target.closest('[data-scale]');
+        if (sc) {
+          local.set('scale', +sc.dataset.scale);
+          root.querySelectorAll('[data-scale]').forEach(c => c.classList.toggle('on', c === sc));
+          if (openId) applyStyle(note(openId).style);
+          return;
+        }
         const s = e.target.closest('[data-sw]');
         if (s) {
           const on = !s.classList.contains('on');
@@ -1619,6 +1922,399 @@
       });
     });
   });
+
+  // ───────── быстрая заметка во «Входящие» ─────────
+  function inbox() {
+    let n = note(local.get('inbox', null));
+    if (!n) n = [...notes.values()].find(x => !x.parent && titleOf(x) === 'Входящие');
+    if (!n) n = newNote({ blocks: [{ id: uid(), type: 'title', html: 'Входящие' }], open: false });
+    local.set('inbox', n.id);
+    return n;
+  }
+  function quickNote() {
+    openSheet(`<h3>Во «Входящие»</h3>
+      <textarea class="field" id="quick-text" placeholder="Мысль, задача, ссылка…" autofocus></textarea>
+      <p class="note-p">Начни с [] - будет задача, с @завтра 10:00 - ещё и напоминание.</p>
+      <div class="btns"><button class="btn" data-cancel>Отмена</button><button class="btn primary" data-ok>Сохранить</button></div>`, root => {
+      const area = root.querySelector('#quick-text');
+      area.focus();
+      root.addEventListener('click', e => {
+        if (e.target.closest('[data-cancel]')) return closeSheet();
+        if (!e.target.closest('[data-ok]')) return;
+        const text = area.value.trim();
+        closeSheet();
+        if (!text) return;
+        const n = inbox();
+        const blocks = parseMarkdown(text.split('\n').map(l => l.startsWith('[] ') ? '[ ] ' + l.slice(3) : l).join('\n'));
+        if (n.blocks.length && !isObject(n.blocks[n.blocks.length - 1]) && !plainOf(n.blocks[n.blocks.length - 1].html) && n.blocks.length > 1) n.blocks.pop();
+        n.blocks.push(...blocks);
+        save(n);
+        if (openId === n.id) renderNote();
+        renderList();
+        click('enter');
+        toast('Сохранено во «Входящие»', 'Открыть', () => openNote(n.id, true));
+      });
+    });
+  }
+  $('#btn-quick').addEventListener('click', quickNote);
+  // Долгое нажатие на «+» - быстрая заметка; обычное - новая заметка.
+  {
+    const fab = $('#btn-new');
+    let timer = null, long = false;
+    fab.addEventListener('pointerdown', () => { long = false; timer = setTimeout(() => { long = true; if (navigator.vibrate) navigator.vibrate(10); quickNote(); }, 480); });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) fab.addEventListener(ev, () => clearTimeout(timer));
+    fab.addEventListener('click', () => { if (long) { long = false; return; } newNote(); });
+  }
+
+  // ───────── перенос заметок ─────────
+  function isInside(id, ancestor) { let p = note(id) && note(id).parent; while (p) { if (p === ancestor) return true; p = note(p) && note(p).parent; } return false; }
+  const depthOf = id => { let d = 0, p = note(id) && note(id).parent; while (p) { d++; p = note(p) && note(p).parent; } return d; };
+  const heightOf = id => { const kids = children(id); return kids.length ? 1 + Math.max(...kids.map(k => heightOf(k.id))) : 0; };
+  function moveNote(n, parent) {
+    if (parent && (parent === n.id || isInside(parent, n.id))) return;
+    if (parent && depthOf(parent) + 1 + heightOf(n.id) > 5) return toast('Глубже 5 уровней вкладывать нельзя');
+    const old = n.parent;
+    if (old !== parent) {
+      if (old && note(old)) { const o = note(old); o.blocks = o.blocks.filter(b => !(b.type === 'page' && b.page === n.id)); if (!o.blocks.length) o.blocks.push({ id: uid(), type: 'text', html: '' }); save(o); }
+      if (parent) { const p = note(parent); p.blocks.push({ id: uid(), type: 'page', page: n.id }); save(p); expanded.add(parent); local.set('expanded', [...expanded]); }
+    }
+    n.parent = parent || null;
+    const sibs = children(n.parent).filter(x => x.id !== n.id);
+    n.order = sibs.length ? sibs[sibs.length - 1].order + 1 : 0;
+    save(n);
+    renderList();
+    toast(parent ? 'Теперь внутри «' + titleOf(note(parent)) + '»' : 'Перенесено наверх');
+  }
+  function shiftNote(n, dir) {
+    const sibs = children(n.parent || null), i = sibs.findIndex(x => x.id === n.id), j = i + dir;
+    if (j < 0 || j >= sibs.length) return;
+    [sibs[i].order, sibs[j].order] = [sibs[j].order, sibs[i].order];
+    if (sibs[i].order === sibs[j].order) sibs[i].order += dir;
+    save(sibs[i]); save(sibs[j]);
+    renderList();
+  }
+  function moveSheet(n) {
+    const rows = [];
+    const walk = (parent, depth) => { for (const x of children(parent)) { if (x.id === n.id || isInside(x.id, n.id)) continue; rows.push([x, depth]); walk(x.id, depth + 1); } };
+    walk(null, 0);
+    openSheet(`<h3>Переместить</h3>
+      <div class="btns"><button class="btn" data-shift="-1">↑ Выше</button><button class="btn" data-shift="1">↓ Ниже</button></div>
+      <div class="group">ПОЛОЖИТЬ ВНУТРЬ</div>
+      <button class="item${!n.parent ? ' on' : ''}" data-to=""><span class="ic">⌂</span><span class="lbl">Наверх, без папки</span></button>
+      ${rows.map(([x, d]) => `<button class="item${n.parent === x.id ? ' on' : ''}" data-to="${x.id}" style="padding-left:${8 + d * 18}px"><span class="ic">${ICON.page}</span><span class="lbl">${esc(titleOf(x))}</span></button>`).join('')}`, root => {
+      root.addEventListener('click', e => {
+        const sh = e.target.closest('[data-shift]'), to = e.target.closest('[data-to]');
+        if (sh) { shiftNote(n, +sh.dataset.shift); toast(+sh.dataset.shift < 0 ? 'Выше в списке' : 'Ниже в списке'); }
+        if (to) { closeSheet(); moveNote(n, to.dataset.to || null); openNote(n.id); }
+      });
+    });
+  }
+
+  // ───────── прошлые версии ─────────
+  async function versionsSheet(n) {
+    const all = (await DB.all('backups').catch(() => [])).filter(v => v.note === n.id).sort((a, b) => b.saved - a.saved);
+    openSheet(`<h3>Прошлые версии</h3>
+      <p class="sub">Когда заметка разом теряет заметную часть текста, прошлая версия сохраняется здесь.</p>
+      ${all.length ? all.map((v, i) => `<button class="item" data-v="${i}"><span class="ic">↺</span><span class="lbl">${new Date(v.saved).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}<small>${esc(titleOf(v.data))} · ${textLength(v.data)} знаков</small></span></button>`).join('')
+        : '<p class="note-p">Пока ни одной - текст ни разу не пропадал.</p>'}`, root => {
+      root.addEventListener('click', e => {
+        const it = e.target.closest('[data-v]');
+        if (!it) return;
+        const v = all[+it.dataset.v];
+        // Текущая версия сама уходит в резервные - вернуть можно и её.
+        DB.put('backups', { key: n.id + '@' + Date.now(), note: n.id, saved: Date.now(), data: JSON.parse(JSON.stringify(n)) });
+        n.blocks = v.data.blocks;
+        n.style = v.data.style;
+        written.set(n.id, JSON.stringify(n));
+        save(n);
+        closeSheet();
+        openNote(n.id);
+        toast('Версия возвращена');
+      });
+    });
+  }
+
+  // ───────── страница картинкой и в PDF ─────────
+  const CANVAS_FONTS = { hand: 'Caveat, cursive', system: '-apple-system, system-ui, sans-serif', serif: '"New York", ui-serif, Georgia, serif',
+    mono: 'ui-monospace, Menlo, monospace', rounded: 'ui-rounded, -apple-system, system-ui, sans-serif' };
+  async function bitmapOf(id) {
+    const f = id && await DB.get('files', id).catch(() => null);
+    return f ? createImageBitmap(f.blob).catch(() => null) : null;
+  }
+  /// Страница целиком на холсте - фон, шрифт, маркеры, галочки, доски, плееры. Как экспорт на Mac.
+  async function renderPage(n) {
+    const v = styleVars(n.style), W = 820, pad = 64, colW = W - pad * 2;
+    const fam = CANVAS_FONTS[v.fontKey] || CANVAS_FONTS.hand;
+    await Promise.all([document.fonts.load('500 30px Caveat'), document.fonts.load('700 30px Caveat')]).catch(() => {});
+    const bg = v.image && await bitmapOf(v.image), cover = v.cover && await bitmapOf(v.cover);
+    const images = new Map();
+    for (const b of n.blocks) if (b.type === 'image') images.set(b.id, await bitmapOf(b.file));
+    const meter = document.createElement('canvas').getContext('2d');
+    const base = v.px / textScale(), lh = v.line;
+    const font = (size, weight = 500, f = fam) => `${weight} ${size}px ${f}`;
+    const wrap = (text, f, width) => {
+      meter.font = f;
+      const out = [];
+      for (const para of text.split('\n')) {
+        let line = '';
+        for (const word of para.split(/(\s+)/)) {
+          const next = line + word;
+          if (meter.measureText(next).width > width && line.trim()) { out.push(line.trimEnd()); line = word.trimStart(); } else line = next;
+        }
+        out.push(line);
+      }
+      return out;
+    };
+    const ops = [];
+    let y = cover ? 210 : 56;
+    let num = 0, collapsed = false;
+    const fg = v.text;
+    n.blocks.forEach((b, i) => {
+      num = b.type === 'numbered' ? num + 1 : 0;
+      if (b.type === 'toggle') collapsed = !!b.collapsed; else if (b.type !== 'toggleItem') collapsed = false;
+      if (b.type === 'toggleItem' && collapsed) return;
+      const text = plainOf(b.html);
+      if (!isObject(b)) {
+        const size = b.type === 'title' ? base * 1.55 : b.type === 'heading' ? base * 1.3 : b.type === 'subheading' ? base * 1.12 : b.type === 'code' ? 14 : base;
+        const weight = ['title', 'heading', 'subheading'].includes(b.type) ? 700 : 500;
+        const f = b.type === 'code' ? font(14, 400, CANVAS_FONTS.mono) : font(size, weight);
+        const indent = ['bullet', 'numbered', 'todo', 'done', 'toggle', 'toggleItem'].includes(b.type) ? 32 : b.type === 'quote' ? 22 : b.type === 'code' ? 16 : 0;
+        // Строка с оформлением: цвета, маркеры, жирный, курсив; у кода - раскраска.
+        const html = b.type === 'code'
+          ? Code.paint(text, (() => { const g = codeGroup(n, i); return g[0].lang || Code.detect(g.map(x => plainOf(x.html)).join('\n')); })())
+          : b.html;
+        const fontFor = st => b.type === 'code' ? font(14, st.bold ? 600 : 400, CANVAS_FONTS.mono) : `${st.italic ? 'italic ' : ''}${st.bold ? 700 : weight} ${size}px ${fam}`;
+        const lines = layoutRich(segmentsOf(html), fontFor, colW - indent - (b.type === 'code' ? 16 : 0));
+        const step = b.type === 'code' ? 22 : size * lh;
+        if (['title', 'heading', 'subheading'].includes(b.type)) y += size * 0.3;
+        const first = (n.blocks[i - 1] || {}).type !== 'code', last = (n.blocks[i + 1] || {}).type !== 'code';
+        if (b.type === 'code' && first) y += 10;
+        const top = y, h = lines.length * step;
+        const kind = b.type, number = num;
+        ops.push(ctx => {
+          if (kind === 'code') {
+            ctx.fillStyle = 'rgba(0,0,0,.32)';
+            ctx.fillRect(pad, top - (first ? 10 : 0), colW, h + (first ? 10 : 0) + (last ? 10 : 0));
+          }
+          ctx.globalAlpha = kind === 'done' ? 0.45 : kind === 'quote' ? 0.88 : 1;
+          ctx.textBaseline = 'middle';
+          lines.forEach((line, k) => {
+            const ly = top + k * step + step / 2;
+            for (const tk of line) {
+              const x = pad + indent + tk.x;
+              if (tk.st.mark) { ctx.fillStyle = tk.st.mark; ctx.fillRect(x, ly - size * 0.55, tk.w, size * 1.1); }
+              ctx.font = fontFor(tk.st);
+              ctx.fillStyle = tk.st.color || fg;
+              ctx.fillText(tk.text, x, ly);
+              if (tk.st.strike || kind === 'done') ctx.fillRect(x, ly, tk.w, 1.5);
+              if (tk.st.underline) ctx.fillRect(x, ly + size * 0.42, tk.w, 1.2);
+            }
+          });
+          ctx.globalAlpha = 1;
+          const mid = top + step / 2;
+          ctx.fillStyle = fg; ctx.strokeStyle = fg;
+          if (kind === 'bullet') { if (v.dash) ctx.fillRect(pad + 6, mid - 1, 11, 2); else { ctx.beginPath(); ctx.arc(pad + 12, mid, 3.3, 0, 7); ctx.fill(); } }
+          if (kind === 'numbered') { ctx.globalAlpha = 0.75; ctx.font = font(base); ctx.fillText(number + '.', pad + 2, mid); ctx.globalAlpha = 1; }
+          if (kind === 'todo' || kind === 'done') {
+            ctx.lineWidth = 1.7; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(pad + 4, mid - 9, 18, 18, 5) : ctx.rect(pad + 4, mid - 9, 18, 18);
+            if (kind === 'done') { ctx.fill(); ctx.strokeStyle = v.base; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(pad + 8.5, mid); ctx.lineTo(pad + 11.5, mid + 3.5); ctx.lineTo(pad + 18, mid - 4); ctx.stroke(); }
+            else ctx.stroke();
+          }
+          if (kind === 'toggle') { ctx.beginPath(); ctx.moveTo(pad + 8, mid - 5); ctx.lineTo(pad + 16, mid - 5); ctx.lineTo(pad + 12, mid + 4); ctx.fill(); }
+          if (kind === 'quote') { ctx.globalAlpha = 0.55; ctx.fillRect(pad + 2, top + 4, 2.5, h - 8); ctx.globalAlpha = 1; }
+        });
+        y += h + (b.type === 'code' && last ? 10 : 0);
+        if (b.type !== 'code') y += 2;
+        return;
+      }
+      // Предметы.
+      const top = y + 10;
+      let h = 0;
+      if (b.type === 'divider') {
+        h = 26;
+        ops.push(ctx => {
+          const m = top + 13;
+          ctx.fillStyle = fg;
+          if (v.divider === 'dots') { ctx.globalAlpha = 0.45; for (const dx of [-16, 0, 16]) { ctx.beginPath(); ctx.arc(W / 2 + dx, m, 2.3, 0, 7); ctx.fill(); } }
+          else if (v.divider === 'washi') { ctx.save(); ctx.translate(W / 2, m); ctx.rotate(-0.02); ctx.fillStyle = 'rgba(255,217,128,.28)'; ctx.fillRect(-colW * 0.3, -7, colW * 0.6, 14); ctx.restore(); }
+          else { ctx.globalAlpha = 0.3; ctx.fillRect(pad, m - 0.75, colW, 1.5); }
+          ctx.globalAlpha = 1;
+        });
+      } else if (b.type === 'image') {
+        const img = images.get(b.id);
+        if (img) {
+          const w = Math.min(colW * (b.width || 1), img.width), hh = Math.min(w * img.height / img.width, 520), ww = hh * img.width / img.height;
+          h = hh;
+          ops.push(ctx => { ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect((W - ww) / 2, top, ww, hh, 12) : ctx.rect((W - ww) / 2, top, ww, hh); ctx.clip(); ctx.drawImage(img, (W - ww) / 2, top, ww, hh); ctx.restore(); });
+        }
+      } else if (b.type === 'page' || b.type === 'file') {
+        h = 58;
+        const title = b.type === 'page' ? (note(b.page) ? titleOf(note(b.page)) : 'Страница') : (b.name || 'Файл');
+        ops.push(ctx => {
+          ctx.fillStyle = v.card === 'filled' ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.08)';
+          ctx.beginPath(); ctx.roundRect ? ctx.roundRect(pad, top, Math.min(colW, 560), h, 14) : ctx.rect(pad, top, Math.min(colW, 560), h); ctx.fill();
+          ctx.strokeStyle = v.card === 'outline' ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.14)'; ctx.stroke();
+          ctx.fillStyle = fg; ctx.font = font(base * 0.8, 650); ctx.textBaseline = 'middle';
+          ctx.fillText((b.type === 'page' ? '📄 ' : '📎 ') + title, pad + 18, top + h / 2);
+        });
+      } else if (b.type === 'board') {
+        const cols = b.columns.length || 1, gap = 8, lw = (colW - gap * (cols + 1)) / cols;
+        const rows = Math.max(1, ...b.columns.map(c => c.cards.length));
+        h = 44 + rows * 40 + 14;
+        ops.push(ctx => {
+          ctx.fillStyle = 'rgba(255,255,255,.04)'; ctx.fillRect(pad, top, colW, h);
+          b.columns.forEach((c, ci) => {
+            const x = pad + gap + ci * (lw + gap);
+            ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fillRect(x, top + 6, lw, h - 12);
+            ctx.fillStyle = fg; ctx.font = font(v.fontKey === 'hand' ? 20 : 14, 700); ctx.textBaseline = 'middle';
+            ctx.fillText(c.title, x + 10, top + 26);
+            c.cards.forEach((k, ki) => {
+              const cy = top + 44 + ki * 40;
+              ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fillRect(x + 6, cy, lw - 12, 34);
+              ctx.fillStyle = fg; ctx.font = font(v.fontKey === 'hand' ? 18 : 13);
+              ctx.fillText(wrap(k.text, ctx.font, lw - 28)[0] || '', x + 15, cy + 17);
+            });
+          });
+        });
+      } else if (b.type === 'audio') {
+        h = 56;
+        ops.push(ctx => {
+          const w = Math.min(colW, 460);
+          ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(pad, top, w, h, 28) : ctx.rect(pad, top, w, h); ctx.fill();
+          ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(pad + 28, top + 28, 20, 0, 7); ctx.fill();
+          ctx.fillStyle = v.base; ctx.beginPath(); ctx.moveTo(pad + 23, top + 20); ctx.lineTo(pad + 35, top + 28); ctx.lineTo(pad + 23, top + 36); ctx.fill();
+          const peaks = b.peaks || [], left = pad + 62, right = pad + w - 64, step = (right - left) / Math.max(peaks.length, 1);
+          ctx.fillStyle = fg; ctx.globalAlpha = 0.45;
+          peaks.forEach((p, k) => { const ph = Math.max(3, p * 30); ctx.fillRect(left + k * step, top + 28 - ph / 2, Math.max(step * 0.55, 1.5), ph); });
+          ctx.globalAlpha = 0.7; ctx.font = '500 13px -apple-system, system-ui'; ctx.textBaseline = 'middle';
+          ctx.fillText(fmtTime(b.duration || 0), pad + w - 50, top + 28); ctx.globalAlpha = 1;
+        });
+      } else if (b.type === 'table') {
+        const cols = Math.max(...b.cells.map(r => r.length), 1), cw = colW / cols, rh = 34;
+        h = b.cells.length * rh;
+        ops.push(ctx => {
+          ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 1;
+          ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fillRect(pad, top, colW, rh);
+          b.cells.forEach((r, ri) => r.forEach((c, ci) => {
+            ctx.strokeRect(pad + ci * cw, top + ri * rh, cw, rh);
+            ctx.fillStyle = fg; ctx.font = font(v.fontKey === 'hand' ? 19 : 14, ri ? 500 : 700); ctx.textBaseline = 'middle';
+            ctx.fillText(wrap(c, ctx.font, cw - 16)[0] || '', pad + ci * cw + 8, top + ri * rh + rh / 2);
+          }));
+        });
+      }
+      y = top + h + 10;
+    });
+    const H = Math.ceil(y + 60);
+    // Холст на iPhone - не больше ~16 млн точек: длинную страницу рисуем чуть мельче.
+    const scale = Math.min(2, Math.sqrt(16e6 / (W * H)));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(W * scale); canvas.height = Math.floor(H * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    if (v.bg.startsWith('linear')) { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, v.base); g.addColorStop(1, v.bottom); ctx.fillStyle = g; } else ctx.fillStyle = v.base;
+    ctx.fillRect(0, 0, W, H);
+    if (bg) {
+      const sc = Math.max(W / bg.width, Math.min(H, W * 0.75) / bg.height);
+      ctx.save(); ctx.filter = 'blur(24px)'; ctx.drawImage(bg, (W - bg.width * sc) / 2, 0, bg.width * sc, bg.height * sc); ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(0, 0, W, H);
+    }
+    if (cover) {
+      const sc = Math.max(W / cover.width, 190 / cover.height);
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 190); ctx.clip();
+      ctx.drawImage(cover, (W - cover.width * sc) / 2, (190 - cover.height * sc) / 2, cover.width * sc, cover.height * sc); ctx.restore();
+      const g = ctx.createLinearGradient(0, 120, 0, 190); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, v.base); ctx.fillStyle = g; ctx.fillRect(0, 120, W, 70);
+    }
+    for (const op of ops) op(ctx);
+    return canvas;
+  }
+  const HL_COLORS = { k: '#ff7ab8', s: '#fac97a', n: '#bd9eff', c: 'rgba(255,255,255,.42)', t: '#73dbf5', g: '#ff8c8c' };
+  /// HTML строки → куски текста со своим оформлением (для рисования на холсте).
+  function segmentsOf(html) {
+    const t = document.createElement('template');
+    t.innerHTML = html || '';
+    const out = [];
+    const walk = (node, st) => {
+      for (const el of node.childNodes) {
+        if (el.nodeType === 3) { if (el.nodeValue) out.push({ text: el.nodeValue.replace(/\u00a0/g, ' '), st }); continue; }
+        if (el.nodeType !== 1) continue;
+        const tag = el.tagName, s2 = { ...st };
+        if (tag === 'BR') { out.push({ text: '\n', st }); continue; }
+        if (tag === 'B' || tag === 'STRONG') s2.bold = true;
+        if (tag === 'I' || tag === 'EM') s2.italic = true;
+        if (tag === 'S' || tag === 'STRIKE' || tag === 'DEL') s2.strike = true;
+        if (tag === 'U') s2.underline = true;
+        if (tag === 'MARK') { const m = /m-(\w+)/.exec(el.className); s2.mark = (MARKS.find(x => x[0] === (m ? m[1] : 'yellow')) || MARKS[0])[1]; }
+        if (tag === 'SPAN') {
+          if (el.style.color) s2.color = el.style.color;
+          if (el.style.backgroundColor) s2.mark = el.style.backgroundColor;
+          const hl = /hl-(\w)/.exec(el.className);
+          if (hl) s2.color = HL_COLORS[hl[1]];
+        }
+        walk(el, s2);
+      }
+    };
+    walk(t.content, {});
+    return out.length ? out : [{ text: ' ', st: {} }];
+  }
+  /// Перенос по словам с учётом разных шрифтов кусков. Строки - списки слов с положением.
+  function layoutRich(segs, fontFor, width) {
+    const meter = layoutRich.meter || (layoutRich.meter = document.createElement('canvas').getContext('2d'));
+    const lines = [[]];
+    let x = 0;
+    for (const seg of segs) {
+      for (const piece of seg.text.split(/(\n|\s+)/)) {
+        if (!piece) continue;
+        if (piece === '\n') { lines.push([]); x = 0; continue; }
+        meter.font = fontFor(seg.st);
+        const w = meter.measureText(piece).width;
+        const space = /^\s+$/.test(piece);
+        if (space && x === 0) continue;
+        if (!space && x > 0 && x + w > width) { lines.push([]); x = 0; }
+        lines[lines.length - 1].push({ text: piece, x, w, st: seg.st });
+        x += w;
+      }
+    }
+    return lines;
+  }
+  const canvasBlob = (canvas, type, q) => new Promise(res => canvas.toBlob(res, type, q));
+
+  /// PDF из одной картинки страницы: размер листа - размер страницы.
+  async function makePDF(canvas) {
+    const jpeg = new Uint8Array(await (await canvasBlob(canvas, 'image/jpeg', 0.92)).arrayBuffer());
+    const W = 820, H = Math.round(canvas.height * 820 / canvas.width);
+    const enc = new TextEncoder(), parts = [], offsets = [];
+    let len = 0;
+    const add = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+    const obj = (n, body) => { offsets[n] = len; add(`${n} 0 obj\n`); body(); add('\nendobj\n'); };
+    add('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    obj(1, () => add('<< /Type /Catalog /Pages 2 0 R >>'));
+    obj(2, () => add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
+    obj(3, () => add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`));
+    obj(4, () => { add(`<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`); add(jpeg); add('\nendstream'); });
+    const content = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(5, () => add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+    const xref = len;
+    add(`xref\n0 6\n0000000000 65535 f \n${[1, 2, 3, 4, 5].map(i => String(offsets[i]).padStart(10, '0') + ' 00000 n \n').join('')}`);
+    add(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  async function exportPage(n, kind) {
+    toast('Рисую страницу…');
+    try {
+      const canvas = await renderPage(n);
+      const blob = kind === 'pdf' ? await makePDF(canvas) : await canvasBlob(canvas, 'image/png');
+      shareFile(new File([blob], safeName(titleOf(n)) + (kind === 'pdf' ? '.pdf' : '.png'), { type: blob.type }));
+    } catch (e) { toast('Не получилось: ' + e.message); }
+  }
+  function copyPageImage(n) {
+    closeSheet();
+    const png = renderPage(n).then(c => canvasBlob(c, 'image/png'));
+    if (navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+        .then(() => toast('Картинка в буфере - вставляй куда угодно'), () => exportPage(n, 'png'));
+    } else exportPage(n, 'png');
+  }
 
   // ───────── счётчик слов и фокус ─────────
   const statsBtn = $('#stats');
@@ -1740,7 +2436,7 @@
   async function start() {
     try { await DB.open(); }
     catch { listEl.innerHTML = '<div class="empty"><b>Не открылось хранилище</b>Похоже, приватный режим Safari. Открой страницу в обычной вкладке.</div>'; return; }
-    for (const n of await DB.all('notes')) notes.set(n.id, n);
+    for (const n of await DB.all('notes')) { notes.set(n.id, n); written.set(n.id, JSON.stringify(n)); }
     if (!notes.size && !local.get('welcomed', false)) { welcome(); local.set('welcomed', true); }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     if (local.get('focus', false)) editor.classList.add('focus-mode');
@@ -1751,6 +2447,7 @@
     const last = fromHash || (wide() ? (note(local.get('lastOpen', null)) ? local.get('lastOpen', null) : top && top.id) : null);
     if (last && note(last)) openNote(last); else showList();
     if (fromHash) history.replaceState(null, '', location.pathname);
+    if (/[?&]quick=1/.test(location.search)) { history.replaceState(null, '', location.pathname); quickNote(); }
     if (isIOS && !standalone && !local.get('installSeen', false)) $('#install').hidden = false;
     checkReminders();
     if ('serviceWorker' in navigator) {
@@ -1761,6 +2458,6 @@
   $('#install-close').addEventListener('click', () => { $('#install').hidden = true; local.set('installSeen', true); });
 
   // Для проверок в браузере: заглянуть в заметки и разбор дат.
-  window.zametochki = { notes, Reminders, parseMarkdown, toMarkdown, fromMacDoc, openNote };
+  window.zametochki = { notes, Reminders, parseMarkdown, toMarkdown, fromMacDoc, openNote, renderPage, makePDF, Code, moveNote };
   start();
 })();

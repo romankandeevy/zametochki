@@ -93,7 +93,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 /* ── заметка ── */
 #note { background: var(--page-bg); color: var(--page-fg); }
 #note .top { position: relative; z-index: 2; }
-.scroller { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.scroller { position: relative; z-index: 1; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .editor { max-width: 720px; margin: 0 auto; padding: 4px 22px 0 22px; font: 500 var(--page-size)/var(--page-line) var(--page-font); }
 .tail { height: 45vh; }
 .stats { position: absolute; right: 14px; bottom: calc(var(--safe-bottom) + 12px); z-index: 3; height: 28px; padding: 0 12px;
@@ -266,3 +266,45 @@ textarea.field { min-height: 90px; resize: vertical; font-family: var(--hand); f
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ── своё фото фоном и обложка ── */
+.page-img { position: absolute; inset: -40px; z-index: 0; pointer-events: none; background: center / cover no-repeat;
+            filter: blur(30px) brightness(.62); transform: scale(1.05); }
+.cover { height: 180px; margin-bottom: 8px; background: center / cover no-repeat;
+         -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+.wide .editor { max-width: none; padding-inline: 32px; }
+
+/* ── разделители и карточки по стилю страницы ── */
+.div-dots .b-divider::before { flex: none; margin: auto; width: 4.5px; height: 4.5px; border-radius: 50%; opacity: .45;
+                               box-shadow: -16px 0 0 currentColor, 16px 0 0 currentColor; }
+.div-washi .b-divider::before { flex: none; margin: auto; width: 60%; height: 14px; border-radius: 0; opacity: 1; transform: rotate(-1.2deg);
+                                background: repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 3px, transparent 3px 9px), rgba(255,217,128,.28); }
+.cards-outline .card { background: rgba(255,255,255,.02); border: 1.5px solid rgba(255,255,255,.5); }
+.cards-filled .card { background: rgba(255,255,255,.16); }
+
+/* ── цвета текста и маркера ── */
+.colors { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 6px 6px; }
+.colors button { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font: 700 17px var(--ui); background: rgba(255,255,255,.07); }
+.colors button.on { box-shadow: inset 0 0 0 2px #fff; }
+.colors .mk { border: 1px solid rgba(255,255,255,.15); }
+.colors .mk.none { font-size: 13px; color: var(--muted); background: none; }
+.kbar .aa { font-weight: 700; border-bottom: 3px solid var(--warm); line-height: 1.1; padding: 0 2px; }
+.blk .txt mark.m-green { background: rgba(89,230,128,.3); }
+.blk .txt mark.m-blue { background: rgba(89,166,255,.35); }
+.blk .txt mark.m-pink { background: rgba(255,115,191,.32); }
+.blk .txt mark.m-purple { background: rgba(166,115,255,.35); }
+.blk .txt mark.m-orange { background: rgba(255,153,64,.34); }
+.blk .txt mark.m-red { background: rgba(255,77,77,.34); }
+.blk .txt mark.m-gray { background: rgba(255,255,255,.18); }
+
+/* ── код: шапка и раскраска ── */
+.codehead { display: flex; align-items: center; gap: 14px; margin: 0 -14px 6px; padding: 0 14px 7px; border-bottom: 1px solid rgba(255,255,255,.08);
+            font: 600 11px var(--ui); color: rgba(255,255,255,.55); user-select: none; -webkit-user-select: none; }
+.codehead button { color: inherit; font: inherit; padding: 4px 0; }
+.codehead button[data-lang] { margin-left: auto; }
+.hl-k { color: #ff7ab8; } .hl-s { color: #fac97a; } .hl-n { color: #bd9eff; } .hl-c { color: rgba(255,255,255,.42); }
+.hl-t { color: #73dbf5; } .hl-g { color: #ff8c8c; }
+
+/* новые строки мягко проявляются */
+.appear { animation: appear .22s ease-out; }
+@keyframes appear { from { opacity: 0; transform: translateY(4px); } }
