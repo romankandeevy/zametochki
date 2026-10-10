@@ -135,6 +135,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             completionHandler()
         }
     }
+    /// Меню на иконке в Dock: быстрая заметка и заметка за сегодня без открытия окна.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        let quick = NSMenuItem(title: "Быстрая заметка", action: #selector(dockQuickNote), keyEquivalent: "")
+        let today = NSMenuItem(title: "Заметка за сегодня", action: #selector(dockToday), keyEquivalent: "")
+        for item in [quick, today] { item.target = self; menu.addItem(item) }
+        return menu
+    }
+    @objc private func dockQuickNote() { QuickNote.shared.show() }
+    @objc private func dockToday() {
+        NSApp.activate(ignoringOtherApps: true)
+        Self.store?.openToday()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) {
         Self.store?.flush()
