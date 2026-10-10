@@ -161,7 +161,7 @@ struct TransferSheet: View {
 
     private var sendStart: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("На iPhone откройте Заметочки → «⋯» → «Принять с Mac» и введите показанный там код.").opacity(0.75)
+            Text("На iPhone откройте Заметочки → шестерёнка → «Принять с Mac» и введите показанный там код.").opacity(0.75)
                 .fixedSize(horizontal: false, vertical: true)
             TextField("000000", text: $model.code)
                 .textFieldStyle(.plain)
@@ -185,7 +185,7 @@ struct TransferSheet: View {
 
     private var receiveCode: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("На iPhone откройте Заметочки → «⋯» → «Отправить на Mac» и введите код:").opacity(0.75)
+            Text("На iPhone откройте Заметочки → шестерёнка → «Отправить на Mac» и введите код:").opacity(0.75)
                 .fixedSize(horizontal: false, vertical: true)
             Text(model.receiveCode.prefix(3) + " " + model.receiveCode.suffix(3))
                 .font(.system(size: 44, weight: .semibold, design: .rounded)).monospacedDigit().tracking(4)
