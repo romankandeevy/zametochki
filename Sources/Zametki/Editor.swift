@@ -1055,8 +1055,67 @@ struct Editor: NSViewRepresentable {
                 slashIndex = 0
             } else if !editingSelf {
                 checkSlash()
+                checkLinkTrigger()
             }
             if !editingSelf { updateBar() }
+        }
+
+        // MARK: ссылки на заметки
+
+        /// Где вставить ссылку: выделение или курсор на момент вызова окна выбора.
+        private var linkRange = NSRange(location: 0, length: 0)
+
+        /// «[[» подряд - вместо них открывается окно выбора заметки.
+        private func checkLinkTrigger() {
+            guard let textView, textView.selectedRange().length == 0 else { return }
+            let at = textView.selectedRange().location
+            let ns = textView.string as NSString
+            guard at >= 2, ns.substring(with: NSRange(location: at - 2, length: 2)) == "[[" else { return }
+            let range = NSRange(location: at - 2, length: 2)
+            editingSelf = true
+            if textView.shouldChangeText(in: range, replacementString: "") {
+                textView.textStorage?.replaceCharacters(in: range, with: "")
+                textView.didChangeText()
+            }
+            editingSelf = false
+            beginLink()
+        }
+
+        /// Открыть окно выбора заметки для ссылки (из «[[» или из меню).
+        func beginLink() {
+            guard let textView else { return }
+            linkRange = textView.selectedRange()
+            NotificationCenter.default.post(name: .pickLink, object: nil)
+        }
+
+        /// Вставить ссылку на заметку: на выделенные слова или названием заметки в месте курсора.
+        func insertLink(to id: String, title: String) {
+            guard let textView, let storage = textView.textStorage else { return }
+            let range = NSIntersectionRange(linkRange, NSRange(location: 0, length: storage.length))
+            window?.makeFirstResponder(textView)
+            if range.length > 0 {
+                guard textView.shouldChangeText(in: range, replacementString: nil) else { return }
+                storage.addAttribute(.zLink, value: id, range: range)
+                textView.didChangeText()
+                return
+            }
+            var attrs = textView.typingAttributes.filter { NSAttributedString.Key.semantic.contains($0.key) }
+            attrs[.zLink] = id
+            let link = NSMutableAttributedString(string: title, attributes: attrs)
+            attrs[.zLink] = nil
+            // Пробел без ссылки: дальше печатаешь обычным текстом, а не продолжаешь ссылку.
+            link.append(NSAttributedString(string: " ", attributes: attrs))
+            textView.setSelectedRange(NSRange(location: range.location, length: 0))
+            textView.insertText(link, replacementRange: NSRange(location: range.location, length: 0))
+        }
+
+        private var window: NSWindow? { textView?.window }
+
+        /// Нажатие на ссылку: открывается та заметка.
+        func openLink(at index: Int) {
+            guard let storage = textView?.textStorage, index < storage.length,
+                  let id = storage.attribute(.zLink, at: index, effectiveRange: nil) as? String else { return }
+            if store.note(id) != nil { store.select(id) } else { store.say("Эта заметка удалена") }
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
@@ -2033,6 +2092,19 @@ final class NotesTextView: NSTextView {
                 } else {
                     coordinator?.toggleCheckbox(paragraphAt: m.charIndex)
                 }
+                return
+            }
+        }
+        // Ссылка на заметку: обычный клик открывает её, ⌥-клик ставит курсор для правки слова.
+        if event.clickCount == 1, !event.modifierFlags.contains(.option), let storage = textStorage, storage.length > 0,
+           let layout = layoutManager, let container = textContainer {
+            let local = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
+            var fraction: CGFloat = 0
+            let char = layout.characterIndex(for: local, in: container, fractionOfDistanceBetweenInsertionPoints: &fraction)
+            if char < storage.length, storage.attribute(.zLink, at: char, effectiveRange: nil) != nil,
+               layout.boundingRect(forGlyphRange: NSRange(location: layout.glyphIndexForCharacter(at: char), length: 1), in: container)
+                .insetBy(dx: -2, dy: -2).contains(local) {
+                coordinator?.openLink(at: char)
                 return
             }
         }

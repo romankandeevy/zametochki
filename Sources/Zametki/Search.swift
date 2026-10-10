@@ -3,6 +3,7 @@ import SwiftUI
 
 extension Notification.Name {
     static let openSearch = Notification.Name("zametki.openSearch")
+    static let pickLink = Notification.Name("zametki.pickLink")
 }
 
 /// Поиск по всем заметкам (⌘K): окно поверх редактора. Пустой запрос - недавние заметки.
@@ -63,6 +64,8 @@ enum NoteSearch {
 
 struct SearchPalette: View {
     let store: Store
+    /// Выбор заметки для ссылки вместо перехода к ней.
+    var pick: ((Note) -> Void)?
     let close: () -> Void
     @State private var query = ""
     @State private var selected = 0
@@ -80,7 +83,7 @@ struct SearchPalette: View {
         VStack(spacing: 0) {
             HStack(spacing: 9) {
                 Image(systemName: "magnifyingglass").font(.system(size: 14, weight: .semibold)).opacity(0.5)
-                TextField("Искать по всем заметкам", text: $query)
+                TextField(pick == nil ? "Искать по всем заметкам" : "Ссылка на заметку…", text: $query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 16))
                     .focused($focused)
@@ -150,6 +153,7 @@ struct SearchPalette: View {
         guard hits.indices.contains(selected) else { return }
         let note = hits[selected].note
         close()
+        if let pick { pick(note); return }
         NoteSearch.open(note, query: query, in: store)
     }
 }

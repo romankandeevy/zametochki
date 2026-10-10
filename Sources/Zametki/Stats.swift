@@ -88,3 +88,36 @@ struct StatsBadge: View {
         return time.isEmpty ? words : words + " · " + time
     }
 }
+
+/// «Упоминается в 2»: заметки, которые ссылаются на открытую. Нажал - выбрал, куда перейти.
+struct BacklinksBadge: View {
+    let store: Store
+    @State private var hover = false
+
+    var body: some View {
+        let links = store.selectedID.map { store.backlinks(to: $0) } ?? []
+        if !links.isEmpty {
+            Menu {
+                Text("Упоминается в")
+                ForEach(links) { note in Button(note.title) { store.select(note.id) } }
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "link").font(.system(size: 10, weight: .semibold))
+                    Text("\(links.count)").font(.system(size: 11, weight: .medium)).monospacedDigit()
+                }
+                .foregroundStyle(.white.opacity(hover ? 0.85 : 0.55))
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .background(Capsule().fill(Color(nsColor: PageStyle.current.panelColor).opacity(hover ? 1 : 0.92)))
+                .overlay(Capsule().strokeBorder(.white.opacity(hover ? 0.16 : 0.08)))
+                .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .onHover { hover = $0 }
+            .help("Упоминается в других заметках")
+        }
+    }
+}

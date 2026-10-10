@@ -329,6 +329,14 @@ final class Store {
         say("Сохранено во «Входящие»")
     }
 
+    // MARK: ссылки между заметками
+
+    /// Заметки, в которых есть ссылка на эту.
+    func backlinks(to id: String) -> [Note] {
+        notes.filter { $0.id != id && $0.doc.runs.contains { $0.link == id } }
+            .sorted { $0.modified > $1.modified }
+    }
+
     // MARK: закрепление и недавние
 
     func isPinned(_ id: String) -> Bool { note(id)?.doc.pinned == true }

@@ -366,3 +366,21 @@ final class SearchAndDailyTests: XCTestCase {
         XCTAssertNil(old.pinned)
     }
 }
+
+final class LinkTests: XCTestCase {
+    func testLinkSurvivesSaveAndLoad() {
+        let text = NSMutableAttributedString(string: "Смотри Покупки тут")
+        text.addAttribute(.zLink, value: "abc", range: NSRange(location: 7, length: 7))
+        let doc = Formatting.doc(from: text)
+        XCTAssertEqual(doc.runs.first { $0.link == "abc" }?.length, 7)
+        let back = Formatting.attributed(doc)
+        XCTAssertEqual(back.attribute(.zLink, at: 7, effectiveRange: nil) as? String, "abc")
+        XCTAssertNil(back.attribute(.zLink, at: 0, effectiveRange: nil))
+    }
+
+    func testLinkIsDrawnUnderlinedButKeepsText() {
+        let look = Formatting.visual([.zLink: "abc"])
+        XCTAssertNotNil(look[.underlineStyle])
+        XCTAssertNotNil(look[.font])
+    }
+}

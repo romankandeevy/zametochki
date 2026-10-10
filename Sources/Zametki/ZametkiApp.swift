@@ -87,6 +87,8 @@ struct ZametkiApp: App {
                 .keyboardShortcut("f", modifiers: [.command, .shift])
                 Button("Поиск по заметкам") { NotificationCenter.default.post(name: .openSearch, object: nil) }
                     .keyboardShortcut("k", modifiers: .command)
+                Button("Ссылка на заметку…") { Editor.Coordinator.active?.beginLink() }
+                    .keyboardShortcut("l", modifiers: [.command, .option])
                 Button("Заметка за сегодня") { store.openToday() }
                     .keyboardShortcut("t", modifiers: [.command, .option])
                 Button("Быстрая заметка") { QuickNote.shared.show() }
@@ -148,6 +150,7 @@ struct RootView: View {
     @AppStorage(UILayout.key) private var layout = UILayout.quiet.rawValue
     @State private var settingsOpen = false
     @State private var searchOpen = false
+    @State private var linkOpen = false
 
     var body: some View {
         Group {
@@ -180,7 +183,10 @@ struct RootView: View {
         }
         // Счётчик слов и режим фокуса - в правом нижнем углу, левее панели справа, если она открыта.
         .overlay(alignment: .bottomTrailing) {
-            StatsBadge()
+            HStack(spacing: 8) {
+                BacklinksBadge(store: store)
+                StatsBadge()
+            }
                 .padding(.trailing, layout == UILayout.craft.rawValue && showInspector ? 276 + 12 : 14)
                 .padding(.bottom, layout == UILayout.notebook.rawValue ? 24 : 10)
         }
@@ -195,6 +201,23 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSearch)) { _ in
             withAnimation(.smooth(duration: 0.18)) { searchOpen.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .pickLink)) { _ in
+            withAnimation(.smooth(duration: 0.18)) { linkOpen = true }
+        }
+        // Окно выбора заметки для ссылки: то же окно поиска, но выбор вставляет ссылку.
+        .overlay {
+            if linkOpen {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
+                    SearchPalette(store: store, pick: { note in
+                        Editor.Coordinator.active?.insertLink(to: note.id, title: note.title)
+                    }) { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
+                    .padding(.top, 90)
+                }
+                .transition(.opacity)
+            }
         }
         // Окно поиска ⌘K: тёмная вуаль, закрывается нажатием мимо или Esc.
         .overlay {
