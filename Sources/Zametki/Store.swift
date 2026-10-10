@@ -7,11 +7,16 @@ struct Note: Identifiable, Equatable {
     var modified: Date
     /// Растёт, когда заметку поменяли не из редактора (карточки, перенос блоков): редактор перечитает её.
     var revision = 0
+    /// Закрытая заметка открыта в этом запуске: текст в памяти настоящий.
+    var unlocked = false
 
     var text: String { doc.text }
     var parent: String? { doc.parent }
+    /// Закрытая заметка, которую ещё не открыли: текста в памяти нет.
+    var isClosed: Bool { doc.locked == true && !unlocked }
 
     var title: String {
+        if isClosed { return "Закрытая заметка" }
         let first = text.split(whereSeparator: \.isNewline)
             .map { $0.replacingOccurrences(of: "\u{FFFC}", with: "").trimmingCharacters(in: .whitespaces) }
             .first { !$0.isEmpty }
@@ -224,6 +229,7 @@ final class Store {
 
     /// Новая вложенная страница: в конце списка страниц родителя. Карточку в текст родителя ставит редактор.
     func createPage(in parent: String, title: String) -> String? {
+        guard !isClosed(parent) else { say("Сначала откройте закрытую заметку"); return nil }
         guard canNest(under: parent) else { return nil }
         var doc = Formatting.Doc(text: title)
         if !title.isEmpty { doc.runs = [Formatting.Run(from: 0, length: (title as NSString).length, block: Block.title.rawValue)] }
@@ -251,6 +257,7 @@ final class Store {
         dropEmpty(except: id)
         reveal(id)
         selectedID = id
+        relockOthers(than: id)
     }
 
     /// Раскрыть в списке всех предков, чтобы открытая страница была видна.
@@ -268,6 +275,10 @@ final class Store {
         doc.style = notes[i].doc.style
         doc.pinned = notes[i].doc.pinned
         doc.daily = notes[i].doc.daily
+        doc.locked = notes[i].doc.locked
+        doc.sealed = notes[i].doc.sealed
+        // Пока закрытая заметка не открыта, её текст не трогаем.
+        guard !notes[i].isClosed else { return }
         guard notes[i].doc != doc else { return }
         notes[i].doc = doc
         notes[i].modified = Date()
@@ -276,7 +287,7 @@ final class Store {
 
     /// Правка заметки не из её редактора: редактор, если она открыта, перечитает её.
     func edit(_ id: String, _ body: (NSMutableAttributedString) -> Void) {
-        guard let i = index(id) else { return }
+        guard let i = index(id), !notes[i].isClosed else { return }
         let text = NSMutableAttributedString(attributedString: Formatting.attributed(notes[i].doc))
         body(text)
         var doc = Formatting.doc(from: text)
@@ -285,6 +296,8 @@ final class Store {
         doc.style = notes[i].doc.style
         doc.pinned = notes[i].doc.pinned
         doc.daily = notes[i].doc.daily
+        doc.locked = notes[i].doc.locked
+        doc.sealed = notes[i].doc.sealed
         notes[i].doc = doc
         notes[i].modified = Date()
         notes[i].revision += 1
@@ -325,8 +338,78 @@ final class Store {
             line.hasPrefix("[] ") ? "[ ] " + line.dropFirst(3) : String(line)
         }.joined(separator: "\n")
         let id = inboxID()
+        if isClosed(id) { say("«Входящие» закрыты - откройте их, чтобы дописать"); return }
         append(Formatting.attributed(Formatting.fromMarkdown(source)), to: id)
         say("Сохранено во «Входящие»")
+    }
+
+    // MARK: закрытые заметки
+
+    func isClosed(_ id: String?) -> Bool { note(id)?.isClosed == true }
+
+    private func subtree(_ id: String) -> [String] { [id] + children(of: id).flatMap { subtree($0.id) } }
+
+    /// Закрыть заметку и все её страницы: текст шифруется ключом из связки ключей.
+    func lock(_ id: String) {
+        guard let key = Vault.key(create: true) else { say("Нет доступа к связке ключей"); return }
+        for sub in subtree(id) {
+            guard let i = index(sub) else { continue }
+            if notes[i].doc.locked == true, !notes[i].unlocked { continue }
+            guard let sealed = Vault.seal(.init(text: notes[i].doc.text, runs: notes[i].doc.runs), key: key) else {
+                say("Не удалось зашифровать заметку")
+                return
+            }
+            pendingSave[sub]?.cancel()
+            pendingSave[sub] = nil
+            notes[i].doc.locked = true
+            notes[i].doc.sealed = sealed
+            close(i)
+            // Старые копии были открытым текстом - им на диске не место.
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent("Backups/\(sub)", isDirectory: true))
+        }
+        say("Заметка закрыта")
+    }
+
+    /// Убрать из памяти открытый текст закрытой заметки (на диске он уже зашифрован).
+    private func close(_ i: Int) {
+        notes[i].doc.text = ""
+        notes[i].doc.runs = []
+        notes[i].unlocked = false
+        notes[i].revision += 1
+        write(notes[i].id)
+    }
+
+    /// Открыть закрытую заметку: Touch ID или пароль, затем расшифровка.
+    func unlock(_ id: String, completion: ((Bool) -> Void)? = nil) {
+        guard let i = index(id), notes[i].isClosed else { completion?(true); return }
+        Vault.authenticate(reason: "Открыть закрытую заметку") { [weak self] ok in
+            guard let self, ok, let i = self.index(id), let sealed = self.notes[i].doc.sealed else { completion?(false); return }
+            guard let key = Vault.key(create: false), let content = Vault.open(sealed, key: key) else {
+                self.say("Не удалось расшифровать - ключ не найден")
+                completion?(false)
+                return
+            }
+            self.notes[i].doc.text = content.text
+            self.notes[i].doc.runs = content.runs
+            self.notes[i].unlocked = true
+            self.notes[i].revision += 1
+            completion?(true)
+        }
+    }
+
+    /// Закрыть снова все открытые закрытые заметки, кроме выбранной (или все, если other == nil).
+    func relockOthers(than keep: String?) {
+        for i in notes.indices where notes[i].doc.locked == true && notes[i].unlocked && notes[i].id != keep { close(i) }
+    }
+
+    /// Снять защиту: заметка снова обычная. Только у открытой.
+    func removeLock(_ id: String) {
+        guard let i = index(id), notes[i].doc.locked == true, notes[i].unlocked else { return }
+        notes[i].doc.locked = nil
+        notes[i].doc.sealed = nil
+        notes[i].unlocked = false
+        write(id)
+        say("Защита снята")
     }
 
     // MARK: ссылки между заметками
@@ -416,6 +499,7 @@ final class Store {
     /// Положить заметку внутрь parent (nil - наверх) перед before (nil - в конец).
     func move(_ id: String, into parent: String?, before: String? = nil) {
         guard let i = index(id), id != parent, parent.map({ !isDescendant($0, of: id) }) ?? true else { return }
+        if isClosed(parent) { say("Сначала откройте закрытую заметку"); return }
         if parent != notes[i].parent, !canNest(id, under: parent) { return }
         let oldParent = notes[i].parent
         let siblings = children(of: parent).filter { $0.id != id }
@@ -485,7 +569,7 @@ final class Store {
     /// Пустые заметки верхнего уровня не плодим: уходя с пустой, удаляем её.
     /// Пустые страницы не трогаем - на них стоит карточка в родителе.
     private func dropEmpty(except keep: String?) {
-        for note in notes where note.id != keep && note.parent == nil && !hasChildren(note.id)
+        for note in notes where note.id != keep && note.parent == nil && !hasChildren(note.id) && note.doc.locked != true
             && note.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             pendingSave[note.id]?.cancel()
             pendingSave[note.id] = nil
@@ -507,8 +591,22 @@ final class Store {
         guard let note = note(id) else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
-        guard let data = try? encoder.encode(note.doc) else { return }
-        backupIfShrinking(id, newText: note.doc.text, newSize: data.count)
+        var doc = note.doc
+        if doc.locked == true {
+            // Закрытая заметка лежит на диске только зашифрованной.
+            if note.unlocked {
+                guard let key = Vault.key(create: false),
+                      let sealed = Vault.seal(.init(text: doc.text, runs: doc.runs), key: key) else {
+                    say("Не удалось зашифровать заметку - она не сохранена")
+                    return
+                }
+                doc.sealed = sealed
+            }
+            doc.text = ""
+            doc.runs = []
+        }
+        guard let data = try? encoder.encode(doc) else { return }
+        if doc.locked != true { backupIfShrinking(id, newText: note.doc.text, newSize: data.count) }
         try? data.write(to: url(id), options: .atomic)
     }
 

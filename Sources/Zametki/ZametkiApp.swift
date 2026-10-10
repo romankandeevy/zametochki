@@ -140,7 +140,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         Self.store?.flush()
         Dictation.shared.shutdown()
     }
-    func applicationDidResignActive(_ notification: Notification) { Self.store?.flush() }
+    private var resignedAt: Date?
+    func applicationDidResignActive(_ notification: Notification) {
+        Self.store?.flush()
+        resignedAt = Date()
+    }
+    /// Вернулся не сразу - открытые закрытые заметки закрываются снова.
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if let resignedAt, Date().timeIntervalSince(resignedAt) > 60 { Self.store?.relockOthers(than: nil) }
+        resignedAt = nil
+    }
 }
 
 struct RootView: View {
@@ -419,6 +428,12 @@ struct NoteFileCommands: View {
         Button("Импорт…") { store.add(Transfer.pickFiles()) }
             .keyboardShortcut(shortcuts ? KeyboardShortcut("o", modifiers: .command) : nil)
         Divider()
+        if let note = store.selected, note.doc.locked != true {
+            Button("Закрыть заметку (Touch ID)") { store.lock(note.id) }
+        } else if let note = store.selected, note.unlocked {
+            Button("Закрыть заметку") { store.lock(note.id) }
+            Button("Снять защиту") { store.removeLock(note.id) }
+        }
         Button("Показать в Finder") {
             if let id = store.selectedID { NSWorkspace.shared.activateFileViewerSelecting([store.fileURL(id)]) }
         }
@@ -591,6 +606,11 @@ struct NoteList: View {
         .contextMenu {
             if note.parent == nil {
                 Button(store.isPinned(note.id) ? "Открепить" : "Закрепить") { store.togglePin(note.id) }
+            }
+            if note.doc.locked == true {
+                if note.unlocked { Button("Снять защиту") { store.removeLock(note.id) } }
+            } else {
+                Button("Закрыть (Touch ID)") { store.lock(note.id) }
             }
             Button("Новая страница внутри") {
                 if let page = store.createPage(in: note.id, title: "") {

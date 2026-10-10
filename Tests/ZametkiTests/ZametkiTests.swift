@@ -1,4 +1,5 @@
 import AppKit
+import CryptoKit
 import XCTest
 @testable import Zametki
 
@@ -382,5 +383,36 @@ final class LinkTests: XCTestCase {
         let look = Formatting.visual([.zLink: "abc"])
         XCTAssertNotNil(look[.underlineStyle])
         XCTAssertNotNil(look[.font])
+    }
+}
+
+final class VaultTests: XCTestCase {
+    func testSealAndOpenRoundTrip() throws {
+        let key = SymmetricKey(size: .bits256)
+        let run = Formatting.Run(from: 0, length: 3, block: Block.title.rawValue)
+        let sealed = try XCTUnwrap(Vault.seal(.init(text: "Тайна", runs: [run]), key: key))
+        XCTAssertFalse(sealed.contains("Тайна"))
+        let back = try XCTUnwrap(Vault.open(sealed, key: key))
+        XCTAssertEqual(back.text, "Тайна")
+        XCTAssertEqual(back.runs, [run])
+    }
+
+    func testWrongKeyCannotOpen() throws {
+        let sealed = try XCTUnwrap(Vault.seal(.init(text: "Тайна", runs: []), key: SymmetricKey(size: .bits256)))
+        XCTAssertNil(Vault.open(sealed, key: SymmetricKey(size: .bits256)))
+        XCTAssertNil(Vault.open("не base64 !!", key: SymmetricKey(size: .bits256)))
+    }
+
+    func testClosedNoteHidesTitleUntilUnlocked() {
+        var doc = Formatting.Doc(text: "")
+        doc.locked = true
+        doc.sealed = "x"
+        var note = Note(id: "n", doc: doc, modified: Date())
+        XCTAssertTrue(note.isClosed)
+        XCTAssertEqual(note.title, "Закрытая заметка")
+        note.doc.text = "Дневник"
+        note.unlocked = true
+        XCTAssertFalse(note.isClosed)
+        XCTAssertEqual(note.title, "Дневник")
     }
 }
