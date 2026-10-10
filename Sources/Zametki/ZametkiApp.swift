@@ -160,6 +160,7 @@ struct RootView: View {
     @State private var settingsOpen = false
     @State private var searchOpen = false
     @State private var linkOpen = false
+    @State private var transfer: TransferMode?
 
     var body: some View {
         Group {
@@ -210,6 +211,12 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSearch)) { _ in
             withAnimation(.smooth(duration: 0.18)) { searchOpen.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openTransfer)) { note in
+            transfer = note.object as? TransferMode
+        }
+        .sheet(item: $transfer) { mode in
+            TransferSheet(store: store, mode: mode) { transfer = nil }
         }
         .onReceive(NotificationCenter.default.publisher(for: .pickLink)) { _ in
             withAnimation(.smooth(duration: 0.18)) { linkOpen = true }
@@ -424,6 +431,10 @@ struct NoteFileCommands: View {
         }
         Button("Скопировать как картинку") {
             if let note = store.selected, PageExport.copyImage(note) { store.say("Картинка в буфере - вставляй куда угодно") }
+        }
+        Menu("iPhone") {
+            Button("Отправить на iPhone…") { NotificationCenter.default.post(name: .openTransfer, object: TransferMode.send) }
+            Button("Принять с iPhone…") { NotificationCenter.default.post(name: .openTransfer, object: TransferMode.receive) }
         }
         Button("Импорт…") { store.add(Transfer.pickFiles()) }
             .keyboardShortcut(shortcuts ? KeyboardShortcut("o", modifiers: .command) : nil)

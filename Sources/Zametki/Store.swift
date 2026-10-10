@@ -343,6 +343,57 @@ final class Store {
         say("Сохранено во «Входящие»")
     }
 
+    // MARK: заметки, полученные по коду
+
+    /// Полученные заметки встают в список. Та же заметка (id и текст) не дублируется; изменённая приходит копией.
+    /// Страницы остаются внутри своих родителей, карточки в тексте ведут на новые id. Возвращает, сколько добавлено.
+    @discardableResult
+    func importReceived(_ items: [TransferLink.Item]) -> Int {
+        var idMap: [String: String] = [:]
+        var fresh: [(item: TransferLink.Item, doc: Formatting.Doc, id: String)] = []
+        for item in items {
+            let doc = item.doc ?? Formatting.fromMarkdown(item.md ?? "")
+            if let existing = note(item.id), existing.doc.text == doc.text, existing.doc.runs == doc.runs, !existing.isClosed {
+                idMap[item.id] = item.id
+                continue
+            }
+            let id = note(item.id) == nil && idMap[item.id] == nil ? item.id : newID(offset: Double(fresh.count) * 0.001)
+            idMap[item.id] = id
+            fresh.append((item, doc, id))
+        }
+        guard !fresh.isEmpty else { return 0 }
+        var roots = 0.0
+        let top = (children(of: nil).map { $0.doc.order ?? 0 }.min() ?? 1) - Double(fresh.count) - 1
+        for entry in fresh {
+            var doc = entry.doc
+            doc.locked = nil
+            doc.sealed = nil
+            doc.pinned = nil
+            doc.daily = nil
+            doc.runs = doc.runs.map { var run = $0; run.page = run.page.flatMap { idMap[$0] ?? $0 }; run.link = run.link.flatMap { idMap[$0] ?? $0 }; return run }
+            if let parent = entry.item.parent, let mapped = idMap[parent] {
+                doc.parent = mapped
+                doc.order = entry.item.order ?? 0
+            } else {
+                doc.parent = nil
+                roots += 1
+                doc.order = top + roots
+            }
+            if doc.style == nil { doc.style = PageStyle.saved }
+            notes.append(Note(id: entry.id, doc: doc, modified: Date()))
+            write(entry.id)
+        }
+        // Переехавшая страница без карточки в родителе: ставим карточку в конец.
+        for entry in fresh where entry.doc.parent != nil || entry.item.parent != nil {
+            guard let parent = idMap[entry.item.parent ?? ""], let child = idMap[entry.item.id],
+                  let p = note(parent), !p.doc.runs.contains(where: { $0.page == child }) else { continue }
+            edit(parent) { Formatting.appendCard(child, to: $0) }
+        }
+        if let first = fresh.first(where: { $0.doc.parent == nil || idMap[$0.item.parent ?? ""] == nil }) { select(first.id) }
+        Reminders.sync(self)
+        return fresh.count
+    }
+
     // MARK: закрытые заметки
 
     func isClosed(_ id: String?) -> Bool { note(id)?.isClosed == true }

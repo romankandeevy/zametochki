@@ -416,3 +416,73 @@ final class VaultTests: XCTestCase {
         XCTAssertEqual(note.title, "Дневник")
     }
 }
+
+/// Векторы сгенерированы transfer.js (WebCrypto): Mac и iPhone обязаны получить один и тот же ключ и те же цифры.
+final class TransferCompatTests: XCTestCase {
+    private let recvD = "8a8bccabbdf5c4214c36d87e42c6cf6ebf0cb45e192303d8d35f1d6e1b7debb8"
+    private let sendD = "8bd0416f23867699e2bda2e62916847c0bf1e48ce51e8bf138ab88115a3dfd7c"
+    private let recvPub = "BGZnYpsEY4Y8vF/cly79vFZIsO1aV5etasNR9Kc3xmBLukPLIrW46HvkiO1WG7lhoAR3TFGjJrus2yzlJKmPe1Y="
+    private let sendPub = "BG5dJjIZem2W0zzq+7uu4A2+cIBROKQsv51BRGwP88cdokI6H7tizTWf8xFopQSIGi6PJ6l1wPP9pE5uj7XqrqU="
+
+    private func privateKey(_ hex: String) throws -> P256.KeyAgreement.PrivateKey {
+        let bytes = stride(from: 0, to: hex.count, by: 2).map { UInt8(hex.dropFirst($0).prefix(2), radix: 16)! }
+        return try P256.KeyAgreement.PrivateKey(rawRepresentation: Data(bytes))
+    }
+
+    func testSameKeyAndDigitsAsTheBrowser() throws {
+        let recv = try privateKey(recvD), send = try privateKey(sendD)
+        XCTAssertEqual(recv.publicKey.x963Representation.base64EncodedString(), recvPub)
+        let fromReceiver = try TransferLink.derive(recv, theirPub: Data(base64Encoded: sendPub)!,
+                                                   receiverPub: Data(base64Encoded: recvPub)!, senderPub: Data(base64Encoded: sendPub)!)
+        let fromSender = try TransferLink.derive(send, theirPub: Data(base64Encoded: recvPub)!,
+                                                 receiverPub: Data(base64Encoded: recvPub)!, senderPub: Data(base64Encoded: sendPub)!)
+        XCTAssertEqual(fromReceiver.sas, "7473")
+        XCTAssertEqual(fromSender.sas, "7473")
+        XCTAssertEqual(fromReceiver.key.withUnsafeBytes { Data($0).map { String(format: "%02x", $0) }.joined() }, "b65a5f653bde8fdd21eebd102d1ea409aa73263a46f4a4efd7ed8b8930c61c2c")
+    }
+
+    func testOpensWhatTheBrowserSealed() throws {
+        let recv = try privateKey(recvD)
+        let (key, _) = try TransferLink.derive(recv, theirPub: Data(base64Encoded: sendPub)!,
+                                               receiverPub: Data(base64Encoded: recvPub)!, senderPub: Data(base64Encoded: sendPub)!)
+        let plain = try TransferLink.decrypt(Data(base64Encoded: "U7+WU8Z8AHxoMsVqU656OYryCArteH2VZDykyR5Lv5OC/afuSsm7lK3xh1HWI7Xw")!, key: key)
+        XCTAssertEqual(String(data: plain, encoding: .utf8), "Привет, мир")
+        // И обратно: то, что запечатал Mac, открывается тем же ключом.
+        XCTAssertEqual(try TransferLink.decrypt(try TransferLink.encrypt(Data("ok".utf8), key: key), key: key), Data("ok".utf8))
+    }
+
+    func testPayloadRoundTripsAndSkipsLockedNotes() throws {
+        var locked = Formatting.Doc(text: "")
+        locked.locked = true
+        let notes = [Note(id: "a", doc: Formatting.Doc(text: "Привет"), modified: Date()), Note(id: "b", doc: locked, modified: Date())]
+        let items = try TransferLink.items(from: try TransferLink.payload(for: notes))
+        XCTAssertEqual(items.map(\.id), ["a"])
+        XCTAssertEqual(items.first?.doc?.text, "Привет")
+    }
+}
+
+/// Сквозная проверка с живым посредником: Mac принимает то, что отправил браузерный код.
+/// Запуск: ZTRANSFER_E2E=http://localhost:8799 swift test --filter TransferE2ETests, а в transfer-worker - node test/e2e-send.mjs.
+final class TransferE2ETests: XCTestCase {
+    func testReceivesFromBrowserSender() async throws {
+        guard let relay = ProcessInfo.processInfo.environment["ZTRANSFER_E2E"] else { throw XCTSkip("нужен ZTRANSFER_E2E") }
+        UserDefaults.standard.set(relay, forKey: "transferRelay")
+        defer { UserDefaults.standard.removeObject(forKey: "transferRelay") }
+        let data = try await TransferLink.receive(
+            onCode: { try? $0.write(toFile: "/tmp/ztransfer-code", atomically: true, encoding: .utf8) },
+            confirm: { sas in try? sas.write(toFile: "/tmp/ztransfer-sas-mac", atomically: true, encoding: .utf8); return true })
+        let items = try TransferLink.items(from: data)
+        XCTAssertEqual(items.first?.md, "# Привет\nс телефона")
+    }
+
+    func testSendsToBrowserReceiver() async throws {
+        guard let relay = ProcessInfo.processInfo.environment["ZTRANSFER_E2E"],
+              let code = try? String(contentsOfFile: "/tmp/ztransfer-code-phone", encoding: .utf8) else { throw XCTSkip("нужен ZTRANSFER_E2E и код") }
+        UserDefaults.standard.set(relay, forKey: "transferRelay")
+        defer { UserDefaults.standard.removeObject(forKey: "transferRelay") }
+        let payload = try TransferLink.payload(for: [Note(id: "a", doc: Formatting.Doc(text: "Заметка с Mac"), modified: Date())])
+        try await TransferLink.send(code: code, payload: payload) { sas in
+            try? sas.write(toFile: "/tmp/ztransfer-sas-mac2", atomically: true, encoding: .utf8); return true
+        }
+    }
+}
