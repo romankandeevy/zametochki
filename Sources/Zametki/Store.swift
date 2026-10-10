@@ -131,7 +131,10 @@ final class Store {
     var rows: [(note: Note, depth: Int)] {
         var out: [(Note, Int)] = []
         func walk(_ parent: String?, _ depth: Int) {
-            for note in children(of: parent) {
+            var kids = children(of: parent)
+            // Закреплённые заметки верхнего уровня - выше остальных, порядок среди них прежний.
+            if parent == nil { kids = kids.filter { $0.doc.pinned == true } + kids.filter { $0.doc.pinned != true } }
+            for note in kids {
                 out.append((note, depth))
                 if expanded.contains(note.id) { walk(note.id, depth + 1) }
             }
@@ -263,6 +266,8 @@ final class Store {
         doc.parent = notes[i].doc.parent
         doc.order = notes[i].doc.order
         doc.style = notes[i].doc.style
+        doc.pinned = notes[i].doc.pinned
+        doc.daily = notes[i].doc.daily
         guard notes[i].doc != doc else { return }
         notes[i].doc = doc
         notes[i].modified = Date()
@@ -278,6 +283,8 @@ final class Store {
         doc.parent = notes[i].doc.parent
         doc.order = notes[i].doc.order
         doc.style = notes[i].doc.style
+        doc.pinned = notes[i].doc.pinned
+        doc.daily = notes[i].doc.daily
         notes[i].doc = doc
         notes[i].modified = Date()
         notes[i].revision += 1
@@ -320,6 +327,80 @@ final class Store {
         let id = inboxID()
         append(Formatting.attributed(Formatting.fromMarkdown(source)), to: id)
         say("Сохранено во «Входящие»")
+    }
+
+    // MARK: закрепление и недавние
+
+    func isPinned(_ id: String) -> Bool { note(id)?.doc.pinned == true }
+
+    func togglePin(_ id: String) {
+        guard let i = index(id), notes[i].parent == nil else { return }
+        notes[i].doc.pinned = notes[i].doc.pinned == true ? nil : true
+        scheduleSave(id)
+    }
+
+    /// Последние изменённые заметки - для пустого окна поиска.
+    func recent(_ count: Int = 8) -> [Note] {
+        notes.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted { $0.modified > $1.modified }.prefix(count).map { $0 }
+    }
+
+    // MARK: сегодня
+
+    static func dayKey(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    /// Заметка за день, если она есть.
+    func dailyNote(_ date: Date) -> Note? {
+        let key = Self.dayKey(date)
+        return notes.first { $0.doc.daily == key }
+    }
+
+    /// Открыть заметку за сегодня: нет - создаётся из шаблона «Дневник дня», а невыполненные задачи
+    /// с последнего дня переезжают в конец.
+    @discardableResult
+    func openToday(now: Date = Date()) -> String {
+        if let today = dailyNote(now) { select(today.id); return today.id }
+        var doc = Template.all.first { $0.id == "diary" }?.doc(on: now) ?? Formatting.Doc(text: "")
+        doc.daily = Self.dayKey(now)
+        let carried = unfinishedTasks(before: now)
+        let id = create(doc: doc)
+        if carried.length > 0 {
+            edit(id) { text in
+                if !text.string.hasSuffix("\n") { text.append(NSAttributedString(string: "\n")) }
+                text.append(carried)
+            }
+            say("Невыполненные задачи со вчера - внизу")
+        }
+        return id
+    }
+
+    /// Невыполненные задачи из самой свежей заметки-дня, что раньше этой даты.
+    func unfinishedTasks(before date: Date) -> NSAttributedString {
+        let key = Self.dayKey(date)
+        guard let last = notes.filter({ ($0.doc.daily ?? "") < key && $0.doc.daily != nil })
+            .max(by: { ($0.doc.daily ?? "") < ($1.doc.daily ?? "") }) else { return NSAttributedString() }
+        let text = Formatting.attributed(last.doc)
+        let ns = text.string as NSString
+        let out = NSMutableAttributedString()
+        ns.enumerateSubstrings(in: NSRange(location: 0, length: ns.length), options: .byParagraphs) { _, _, full, _ in
+            let end = max(full.location, NSMaxRange(full) - 1)
+            guard full.length > 0,
+                  Formatting.block(of: text.attributes(at: min(end, ns.length - 1), effectiveRange: nil)) == .todo else { return }
+            let line = text.attributedSubstring(from: full)
+            let body = line.string.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\u{FFFC}")))
+            guard !body.isEmpty else { return }
+            out.append(line.string.hasSuffix("\n") ? line : {
+                let m = NSMutableAttributedString(attributedString: line)
+                m.append(NSAttributedString(string: "\n", attributes: line.attributes(at: line.length - 1, effectiveRange: nil)))
+                return m
+            }())
+        }
+        return out
     }
 
     // MARK: перенос в списке слева

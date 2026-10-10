@@ -322,3 +322,47 @@ final class WhiteboardTests: XCTestCase {
         XCTAssertEqual(Formatting.block(of: text.attributes(at: 5, effectiveRange: nil)), .board)
     }
 }
+
+final class SearchAndDailyTests: XCTestCase {
+    private func note(_ text: String, daily: String? = nil, minutesAgo: Double = 0) -> Note {
+        var doc = Formatting.Doc(text: text)
+        doc.daily = daily
+        return Note(id: UUID().uuidString, doc: doc, modified: Date().addingTimeInterval(-minutesAgo * 60))
+    }
+
+    func testSearchNeedsAllWordsAnyOrder() {
+        let notes = [note("Покупки\nмолоко и хлеб"), note("Работа\nотчёт")]
+        XCTAssertEqual(NoteSearch.search("хлеб молоко", in: notes).count, 1)
+        XCTAssertEqual(NoteSearch.search("хлеб отчёт", in: notes).count, 0)
+        XCTAssertTrue(NoteSearch.search("", in: notes).isEmpty)
+    }
+
+    func testTitleMatchBeatsBodyMatch() {
+        let notes = [note("Дневник\nидея про сад", minutesAgo: 0), note("Идея сада\nтекст", minutesAgo: 60)]
+        XCTAssertEqual(NoteSearch.search("идея", in: notes).first?.note.title, "Идея сада")
+    }
+
+    func testSnippetKeepsContextAroundMatch() {
+        let text = String(repeating: "слово ", count: 30) + "нужное" + String(repeating: " хвост", count: 30)
+        let snippet = NoteSearch.snippet(text, around: "нужное")
+        XCTAssertTrue(snippet.contains("нужное"))
+        XCTAssertTrue(snippet.hasPrefix("…") && snippet.hasSuffix("…"))
+    }
+
+    func testDayKeyIsStable() {
+        var c = DateComponents(); c.year = 2026; c.month = 10; c.day = 10; c.hour = 23
+        XCTAssertEqual(Store.dayKey(Calendar.current.date(from: c)!), "2026-10-10")
+    }
+
+    func testPinnedAndDailyFieldsSurviveSaveAndLoad() throws {
+        var doc = Formatting.Doc(text: "День")
+        doc.pinned = true
+        doc.daily = "2026-10-10"
+        let back = try JSONDecoder().decode(Formatting.Doc.self, from: try JSONEncoder().encode(doc))
+        XCTAssertEqual(back.pinned, true)
+        XCTAssertEqual(back.daily, "2026-10-10")
+        // Старые файлы без этих полей читаются как раньше.
+        let old = try JSONDecoder().decode(Formatting.Doc.self, from: Data(#"{"text":"a","runs":[]}"#.utf8))
+        XCTAssertNil(old.pinned)
+    }
+}

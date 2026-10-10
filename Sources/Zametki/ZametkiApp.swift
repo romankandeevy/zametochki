@@ -85,6 +85,10 @@ struct ZametkiApp: App {
                     Editor.Coordinator.active?.applyFocus()
                 }))
                 .keyboardShortcut("f", modifiers: [.command, .shift])
+                Button("Поиск по заметкам") { NotificationCenter.default.post(name: .openSearch, object: nil) }
+                    .keyboardShortcut("k", modifiers: .command)
+                Button("Заметка за сегодня") { store.openToday() }
+                    .keyboardShortcut("t", modifiers: [.command, .option])
                 Button("Быстрая заметка") { QuickNote.shared.show() }
                     .keyboardShortcut("n", modifiers: [.control, .option])
                 Button("Предыдущая") { store.step(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
@@ -143,6 +147,7 @@ struct RootView: View {
     @Binding var showInspector: Bool
     @AppStorage(UILayout.key) private var layout = UILayout.quiet.rawValue
     @State private var settingsOpen = false
+    @State private var searchOpen = false
 
     var body: some View {
         Group {
@@ -187,6 +192,21 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSettings)) { _ in
             settingsOpen.toggle()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openSearch)) { _ in
+            withAnimation(.smooth(duration: 0.18)) { searchOpen.toggle() }
+        }
+        // Окно поиска ⌘K: тёмная вуаль, закрывается нажатием мимо или Esc.
+        .overlay {
+            if searchOpen {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.smooth(duration: 0.18)) { searchOpen = false } }
+                    SearchPalette(store: store) { withAnimation(.smooth(duration: 0.18)) { searchOpen = false } }
+                        .padding(.top, 90)
+                }
+                .transition(.opacity)
+            }
         }
         .ignoresSafeArea()
         .frame(minWidth: 420, minHeight: 280)
@@ -450,7 +470,10 @@ struct NoteList: View {
         switch variant {
         case .quiet:
             VStack(alignment: .leading, spacing: 2) {
-                NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.style(of: note.id))
+                HStack(spacing: 5) {
+                    if store.isPinned(note.id) { Image(systemName: "pin.fill").font(.system(size: 8.5)).opacity(0.45) }
+                    NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.style(of: note.id))
+                }
                 if depth == 0 {
                     let preview = note.preview.isEmpty ? "" : " · " + note.preview
                     Text(Self.when(note.modified) + preview)
@@ -543,6 +566,9 @@ struct NoteList: View {
         }
         .onDrop(of: [NoteList.noteType], delegate: RowDrop(note: note, store: store, height: rowHeight(depth), dragged: $dragged, target: $target))
         .contextMenu {
+            if note.parent == nil {
+                Button(store.isPinned(note.id) ? "Открепить" : "Закрепить") { store.togglePin(note.id) }
+            }
             Button("Новая страница внутри") {
                 if let page = store.createPage(in: note.id, title: "") {
                     store.edit(note.id) { Formatting.appendCard(page, to: $0) }
