@@ -1593,8 +1593,9 @@ final class NotesTextView: NSTextView {
         if let baseline = caretBaseline() {
             // Верх - чуть выше заглавных, низ - чуть ниже строки: у Caveat ascender/descender с большим запасом,
             // и по ним палочка торчала над словом. Не обрезаем по рамке macOS: на пустой строке она бывает не там.
-            let top = baseline - font.capHeight * 1.2
-            let bottom = baseline + min(-font.descender, font.pointSize * 0.22)
+            // Ровно от верха заглавных до базовой линии: палочка не торчит ни над буквами, ни под ними.
+            let top = baseline - font.capHeight
+            let bottom = baseline
             if bottom > top { rect.origin.y = floor(top); rect.size.height = ceil(bottom - top) }
         } else {
             let height = ceil(font.ascender - font.descender)

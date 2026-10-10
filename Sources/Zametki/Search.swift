@@ -66,6 +66,8 @@ struct SearchPalette: View {
     let store: Store
     /// Выбор заметки для ссылки вместо перехода к ней.
     var pick: ((Note) -> Void)?
+    /// В окне выбора ссылки саму открытую заметку не предлагаем: ссылка на себя бессмысленна.
+    var exclude: String?
     let close: () -> Void
     @State private var query = ""
     @State private var selected = 0
@@ -73,9 +75,9 @@ struct SearchPalette: View {
 
     private var hits: [NoteSearch.Hit] {
         if query.trimmingCharacters(in: .whitespaces).isEmpty {
-            return store.recent().map { NoteSearch.Hit(note: $0, snippet: NoteSearch.snippet(NoteSearch.clean($0.text), around: "\u{0}"), inTitle: false) }
+            return store.recent().filter { $0.id != exclude }.map { NoteSearch.Hit(note: $0, snippet: NoteSearch.snippet(NoteSearch.clean($0.text), around: "\u{0}"), inTitle: false) }
         }
-        return NoteSearch.search(query, in: store.notes)
+        return NoteSearch.search(query, in: store.notes.filter { $0.id != exclude })
     }
 
     var body: some View {

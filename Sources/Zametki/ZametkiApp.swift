@@ -243,7 +243,7 @@ struct RootView: View {
                         .onTapGesture { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
                     SearchPalette(store: store, pick: { note in
                         Editor.Coordinator.active?.insertLink(to: note.id, title: note.title)
-                    }) { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
+                    }, exclude: store.selectedID) { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
                     .padding(.top, 90)
                 }
                 .transition(.opacity)

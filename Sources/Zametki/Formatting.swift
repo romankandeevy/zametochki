@@ -295,10 +295,10 @@ enum Formatting {
         // Caveat и так с наклоном: курсиву нужен заметно сильнее наклон.
         if italic { out[.obliqueness] = style.font == .hand ? 0.3 : 0.2 }
         if attrs[.zUnderline] != nil { out[.underlineStyle] = NSUnderlineStyle.single.rawValue; out[.underlineColor] = color }
-        // Ссылка на заметку: тонкое пунктирное подчёркивание, текст остаётся своим цветом.
+        // Ссылка на заметку: тонкое подчёркивание, текст остаётся своим цветом.
         if attrs[.zLink] != nil {
-            out[.underlineStyle] = NSUnderlineStyle.single.rawValue | NSUnderlineStyle.patternDot.rawValue
-            out[.underlineColor] = color.withAlphaComponent(0.8)
+            out[.underlineStyle] = NSUnderlineStyle.single.rawValue
+            out[.underlineColor] = color.withAlphaComponent(0.4)
         }
         if attrs[.zStrike] != nil || block == .done {
             out[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
