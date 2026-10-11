@@ -4,7 +4,7 @@
 (() => {
   // ───────── мелочи ─────────
   /// Видно в настройках: по нему ясно, доехало ли обновление.
-  const APP_VERSION = 9;
+  const APP_VERSION = 10;
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1984,6 +1984,8 @@
       <div class="chips">${[['Мелкий', 0.88], ['Обычный', 1], ['Крупный', 1.15], ['Огромный', 1.3]].map(([t, v]) => `<button class="chip${textScale() === v ? ' on' : ''}" data-scale="${v}">${t}</button>`).join('')}</div>
       <p class="note-p">Быстрая заметка: кнопка с лотком в списке или долгое нажатие на «+». Голосом - микрофон на клавиатуре iPhone.</p>
       <div class="group">С MAC И НА MAC</div>
+      <button class="item" data-a="from-mac"><span class="ic">⇣</span><span class="lbl">Принять с Mac<small>По шестизначному коду, без файлов</small></span></button>
+      <button class="item" data-a="to-mac"><span class="ic">⇡</span><span class="lbl">Отправить на Mac<small>Код покажет Mac</small></span></button>
       <button class="item" data-a="import"><span class="ic">↓</span><span class="lbl">Открыть файлы<small>.md, .txt, заметки .json с Мака, резервная копия</small></span></button>
       <button class="item" data-a="md"><span class="ic">MD</span><span class="lbl">Все заметки в Markdown<small>На Mac: «⋯ → Импорт»</small></span></button>
       <button class="item" data-a="template"><span class="ic">${ICON.template}</span><span class="lbl">Новая заметка из шаблона</span></button>
@@ -2009,6 +2011,8 @@
         }
         const a = e.target.closest('[data-a]');
         if (!a) return;
+        if (a.dataset.a === 'from-mac') transferSheet('receive');
+        if (a.dataset.a === 'to-mac') transferSheet('send');
         if (a.dataset.a === 'import') $('#file-import').click();
         if (a.dataset.a === 'md') exportAllMarkdown();
         if (a.dataset.a === 'backup') backup();
@@ -2016,6 +2020,104 @@
       });
     });
   });
+
+
+  // ───────── перенос по коду: Mac ↔ iPhone ─────────
+  // Адрес посредника (transfer-worker/). Заметки идут зашифрованными, ключ есть только у двух устройств.
+  const RELAY = local.get('relay', 'https://zametochki-transfer.romankandeevy.workers.dev');
+
+  /// Полученные заметки встают в список: страницы остаются внутри родителей, одинаковые не дублируются.
+  async function importReceived(items) {
+    const idMap = new Map(), made = [];
+    for (const it of items) {
+      const blocks = it.doc ? fromMacDoc(it.doc) : parseMarkdown(it.md || '');
+      const old = note(it.id);
+      if (old && blocksText(old).join('\n') === blocks.filter(b => !isObject(b)).map(b => plainOf(b.html)).join('\n')) { idMap.set(it.id, old.id); continue; }
+      const made1 = newNote({ blocks, style: it.doc && it.doc.style ? macStyle(it.doc.style) : null, open: false });
+      idMap.set(it.id, made1.id);
+      made.push({ n: made1, it });
+    }
+    let top = 0;
+    for (const { n, it } of made) {
+      const parent = it.parent && idMap.get(it.parent);
+      if (parent && note(parent) && parent !== n.id) {
+        n.parent = parent;
+        n.order = it.order ?? 0;
+        const p = note(parent);
+        if (!p.blocks.some(b => b.type === 'page' && b.page === n.id)) { p.blocks.push({ id: uid(), type: 'page', page: n.id }); save(p); }
+        expanded.add(parent);
+      } else { n.parent = null; n.order = --top - made.length; }
+      save(n);
+    }
+    local.set('expanded', [...expanded]);
+    renderList();
+    const first = made.find(m => !m.n.parent);
+    if (first) openNote(first.n.id, true);
+    return made.length;
+  }
+
+  function transferSheet(mode) {
+    let abort = null;
+    const spaced = c => c.slice(0, 3) + ' ' + c.slice(3);
+    openSheet('<h3></h3><div id="tr-body"></div>', root => {
+      const title = root.querySelector('h3'), body = root.querySelector('#tr-body');
+      title.textContent = mode === 'receive' ? 'Принять с Mac' : 'Отправить на Mac';
+      let answer = null;
+      const show = html => { body.innerHTML = html; };
+      const fail = e => {
+        const text = e && e.message === 'mismatch' ? 'Цифры не совпали - перенос отменён'
+          : e && /relay (404|409)/.test(e.message) ? 'Код не подошёл или устарел. Проверь цифры на Mac'
+          : e && e.message === 'cancelled' ? '' : 'Не получилось: ' + (e && e.message || e);
+        if (text) show(`<p class="note-p">${esc(text)}</p><div class="btns"><button class="btn primary" data-retry>Ещё раз</button></div>`);
+      };
+      const confirm = sas => new Promise(res => {
+        answer = res;
+        show(`<p class="note-p">Эти цифры должны быть и на Mac:</p>
+          <div style="font:700 56px/1.1 var(--hand);text-align:center;letter-spacing:.12em;margin:10px 0">${esc(sas)}</div>
+          <div class="btns"><button class="btn" data-no>Нет</button><button class="btn primary" data-yes>Совпадают</button></div>`);
+      });
+      const run = async () => {
+        abort = new AbortController();
+        try {
+          if (mode === 'receive') {
+            const data = await ZTransfer.receive({ relay: RELAY, signal: abort.signal, confirm,
+              onCode: code => show(`<p class="note-p">На Mac: «⋯» → «iPhone» → «Отправить на iPhone» и введи код:</p>
+                <div style="font:700 64px/1.1 var(--hand);text-align:center;letter-spacing:.08em;margin:10px 0">${spaced(code)}</div>
+                <p class="note-p">Код живёт пять минут.</p>`) });
+            show('<p class="note-p">Добавляю заметки…</p>');
+            const n = await importReceived(data.notes || []);
+            show(`<p class="note-p">${n ? `Добавлено заметок: ${n}` : 'Всё это у тебя уже есть'}</p><div class="btns"><button class="btn primary" data-done>Готово</button></div>`);
+          } else {
+            const code = root.querySelector('#tr-code').value.replace(/\D/g, '');
+            if (code.length !== 6) return fail(new Error('Нужен шестизначный код с Mac'));
+            show('<p class="note-p">Соединяюсь…</p>');
+            const all = root.querySelector('#tr-all') && root.querySelector('#tr-all').checked;
+            const list = all || !openId ? [...notes.values()] : (() => { const out = []; const walk = id => { const x = note(id); if (x) { out.push(x); children(id).forEach(c => walk(c.id)); } }; walk(openId); return out; })();
+            const payload = { v: 1, from: 'phone', notes: list.map(x => ({ id: x.id, parent: x.parent || null, order: x.order, md: toMarkdown(x) })) };
+            await ZTransfer.send({ relay: RELAY, code, payload, confirm });
+            show(`<p class="note-p">Отправлено заметок: ${list.length}. Они уже на Mac.</p><div class="btns"><button class="btn primary" data-done>Готово</button></div>`);
+          }
+        } catch (e) { fail(e); }
+      };
+      const start = () => {
+        if (mode === 'receive') return run();
+        show(`<p class="note-p">На Mac: «⋯» → «iPhone» → «Принять с iPhone» - там покажется код. Введи его здесь.</p>
+          <input class="field" id="tr-code" inputmode="numeric" autocomplete="off" maxlength="7" placeholder="000 000" style="font:700 34px var(--hand);text-align:center">
+          <label class="toggle-row"><span>Все заметки<small>Иначе - открытая и её страницы</small></span><input type="checkbox" id="tr-all"></label>
+          <p class="note-p">Картинки и файлы остаются на устройстве.</p>
+          <div class="btns"><button class="btn primary" data-go>Отправить</button></div>`);
+        body.querySelector('#tr-code').focus();
+      };
+      root.addEventListener('click', e => {
+        if (e.target.closest('[data-yes]') && answer) { const a = answer; answer = null; show('<p class="note-p">Передаю…</p>'); a(true); }
+        else if (e.target.closest('[data-no]') && answer) { const a = answer; answer = null; a(false); }
+        else if (e.target.closest('[data-go]')) run();
+        else if (e.target.closest('[data-retry]')) start();
+        else if (e.target.closest('[data-done]')) closeSheet();
+      });
+      start();
+    }, () => { if (abort) abort.abort(); });
+  }
 
   // ───────── быстрая заметка во «Входящие» ─────────
   function inbox() {

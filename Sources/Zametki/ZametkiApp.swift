@@ -85,6 +85,12 @@ struct ZametkiApp: App {
                     Editor.Coordinator.active?.applyFocus()
                 }))
                 .keyboardShortcut("f", modifiers: [.command, .shift])
+                Button("Поиск по заметкам") { NotificationCenter.default.post(name: .openSearch, object: nil) }
+                    .keyboardShortcut("k", modifiers: .command)
+                Button("Ссылка на заметку…") { Editor.Coordinator.active?.beginLink() }
+                    .keyboardShortcut("l", modifiers: [.command, .option])
+                Button("Заметка за сегодня") { store.openToday() }
+                    .keyboardShortcut("t", modifiers: [.command, .option])
                 Button("Быстрая заметка") { QuickNote.shared.show() }
                     .keyboardShortcut("n", modifiers: [.control, .option])
                 Button("Предыдущая") { store.step(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
@@ -129,12 +135,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             completionHandler()
         }
     }
+    /// Меню на иконке в Dock: быстрая заметка и заметка за сегодня без открытия окна.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        let quick = NSMenuItem(title: "Быстрая заметка", action: #selector(dockQuickNote), keyEquivalent: "")
+        let today = NSMenuItem(title: "Заметка за сегодня", action: #selector(dockToday), keyEquivalent: "")
+        for item in [quick, today] { item.target = self; menu.addItem(item) }
+        return menu
+    }
+    @objc private func dockQuickNote() { QuickNote.shared.show() }
+    @objc private func dockToday() {
+        NSApp.activate(ignoringOtherApps: true)
+        Self.store?.openToday()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) {
         Self.store?.flush()
         Dictation.shared.shutdown()
     }
-    func applicationDidResignActive(_ notification: Notification) { Self.store?.flush() }
+    private var resignedAt: Date?
+    func applicationDidResignActive(_ notification: Notification) {
+        Self.store?.flush()
+        resignedAt = Date()
+    }
+    /// Вернулся не сразу - открытые закрытые заметки закрываются снова.
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if let resignedAt, Date().timeIntervalSince(resignedAt) > 60 { Self.store?.relockOthers(than: nil) }
+        resignedAt = nil
+    }
 }
 
 struct RootView: View {
@@ -143,6 +172,9 @@ struct RootView: View {
     @Binding var showInspector: Bool
     @AppStorage(UILayout.key) private var layout = UILayout.quiet.rawValue
     @State private var settingsOpen = false
+    @State private var searchOpen = false
+    @State private var linkOpen = false
+    @State private var transfer: TransferMode?
 
     var body: some View {
         Group {
@@ -175,7 +207,10 @@ struct RootView: View {
         }
         // Счётчик слов и режим фокуса - в правом нижнем углу, левее панели справа, если она открыта.
         .overlay(alignment: .bottomTrailing) {
-            StatsBadge()
+            HStack(spacing: 8) {
+                BacklinksBadge(store: store)
+                StatsBadge()
+            }
                 .padding(.trailing, layout == UILayout.craft.rawValue && showInspector ? 276 + 12 : 14)
                 .padding(.bottom, layout == UILayout.notebook.rawValue ? 24 : 10)
         }
@@ -187,6 +222,44 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSettings)) { _ in
             settingsOpen.toggle()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openSearch)) { _ in
+            withAnimation(.smooth(duration: 0.18)) { searchOpen.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openTransfer)) { note in
+            transfer = note.object as? TransferMode
+        }
+        .sheet(item: $transfer) { mode in
+            TransferSheet(store: store, mode: mode) { transfer = nil }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .pickLink)) { _ in
+            withAnimation(.smooth(duration: 0.18)) { linkOpen = true }
+        }
+        // Окно выбора заметки для ссылки: то же окно поиска, но выбор вставляет ссылку.
+        .overlay {
+            if linkOpen {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
+                    SearchPalette(store: store, pick: { note in
+                        Editor.Coordinator.active?.insertLink(to: note.id, title: note.title)
+                    }, exclude: store.selectedID) { withAnimation(.smooth(duration: 0.18)) { linkOpen = false } }
+                    .padding(.top, 90)
+                }
+                .transition(.opacity)
+            }
+        }
+        // Окно поиска ⌘K: тёмная вуаль, закрывается нажатием мимо или Esc.
+        .overlay {
+            if searchOpen {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.smooth(duration: 0.18)) { searchOpen = false } }
+                    SearchPalette(store: store) { withAnimation(.smooth(duration: 0.18)) { searchOpen = false } }
+                        .padding(.top, 90)
+                }
+                .transition(.opacity)
+            }
         }
         .ignoresSafeArea()
         .frame(minWidth: 420, minHeight: 280)
@@ -373,9 +446,19 @@ struct NoteFileCommands: View {
         Button("Скопировать как картинку") {
             if let note = store.selected, PageExport.copyImage(note) { store.say("Картинка в буфере - вставляй куда угодно") }
         }
+        Menu("iPhone") {
+            Button("Отправить на iPhone…") { NotificationCenter.default.post(name: .openTransfer, object: TransferMode.send) }
+            Button("Принять с iPhone…") { NotificationCenter.default.post(name: .openTransfer, object: TransferMode.receive) }
+        }
         Button("Импорт…") { store.add(Transfer.pickFiles()) }
             .keyboardShortcut(shortcuts ? KeyboardShortcut("o", modifiers: .command) : nil)
         Divider()
+        if let note = store.selected, note.doc.locked != true {
+            Button("Закрыть заметку (Touch ID)") { store.lock(note.id) }
+        } else if let note = store.selected, note.unlocked {
+            Button("Закрыть заметку") { store.lock(note.id) }
+            Button("Снять защиту") { store.removeLock(note.id) }
+        }
         Button("Показать в Finder") {
             if let id = store.selectedID { NSWorkspace.shared.activateFileViewerSelecting([store.fileURL(id)]) }
         }
@@ -450,7 +533,10 @@ struct NoteList: View {
         switch variant {
         case .quiet:
             VStack(alignment: .leading, spacing: 2) {
-                NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.style(of: note.id))
+                HStack(spacing: 5) {
+                    if store.isPinned(note.id) { Image(systemName: "pin.fill").font(.system(size: 8.5)).opacity(0.45) }
+                    NoteLabel(text: note.title, alpha: selected ? 1 : depth == 0 ? 0.88 : 0.62, style: store.style(of: note.id))
+                }
                 if depth == 0 {
                     let preview = note.preview.isEmpty ? "" : " · " + note.preview
                     Text(Self.when(note.modified) + preview)
@@ -543,6 +629,14 @@ struct NoteList: View {
         }
         .onDrop(of: [NoteList.noteType], delegate: RowDrop(note: note, store: store, height: rowHeight(depth), dragged: $dragged, target: $target))
         .contextMenu {
+            if note.parent == nil {
+                Button(store.isPinned(note.id) ? "Открепить" : "Закрепить") { store.togglePin(note.id) }
+            }
+            if note.doc.locked == true {
+                if note.unlocked { Button("Снять защиту") { store.removeLock(note.id) } }
+            } else {
+                Button("Закрыть (Touch ID)") { store.lock(note.id) }
+            }
             Button("Новая страница внутри") {
                 if let page = store.createPage(in: note.id, title: "") {
                     store.edit(note.id) { Formatting.appendCard(page, to: $0) }

@@ -40,7 +40,7 @@ struct QuietLayout: View {
             }
             VStack(spacing: 0) {
                 Color.clear.frame(height: 52)
-                Editor(store: store)
+                Editor(store: store).lockCover(store)
             }
         }
         // Кнопки там же, где были всегда: у светофора - список, новая заметка, микрофон; справа - стиль и «···».
@@ -115,7 +115,7 @@ struct CraftLayout: View {
                 .frame(height: 52)
                 .padding(.leading, 16)
                 .padding(.trailing, 12)
-                Editor(store: store)
+                Editor(store: store).lockCover(store)
             }
             if showInspector {
                 Inspector(store: store)
@@ -153,7 +153,7 @@ struct NotebookLayout: View {
                     }
                 }
                 .frame(height: 52)
-                Editor(store: store)
+                Editor(store: store).lockCover(store)
                     .padding(.bottom, 64) // место под плавающую полоску
             }
             NotebookToolbar(store: store)

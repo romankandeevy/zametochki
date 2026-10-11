@@ -33,10 +33,12 @@ extension NSAttributedString.Key {
     static let zAudio = NSAttributedString.Key("z.audio")
     /// Белая доска - рисунки, фигуры и стикеры JSON-строкой.
     static let zWhiteboard = NSAttributedString.Key("z.whiteboard")
+    /// Ссылка на другую заметку: id заметки. Висит на буквах, оформление - как у обычного слова с подчёркиванием.
+    static let zLink = NSAttributedString.Key("z.link")
 
     static let inlineStyles: [NSAttributedString.Key] = [.zBold, .zItalic, .zUnderline, .zStrike, .zHighlight]
     /// Всё смысловое, что живёт рядом с внешним видом и переживает перерисовку.
-    static let semantic: [NSAttributedString.Key] = inlineStyles + [.zColor, .zBlock, .zPage, .zImage, .zImageWidth, .zFile, .zTable, .zLang,
+    static let semantic: [NSAttributedString.Key] = inlineStyles + [.zColor, .zLink, .zBlock, .zPage, .zImage, .zImageWidth, .zFile, .zTable, .zLang,
                                                                   .zBoard, .zWhiteboard, .zAudio, .zCollapsed, .zHidden, .attachment]
 }
 
@@ -293,6 +295,11 @@ enum Formatting {
         // Caveat и так с наклоном: курсиву нужен заметно сильнее наклон.
         if italic { out[.obliqueness] = style.font == .hand ? 0.3 : 0.2 }
         if attrs[.zUnderline] != nil { out[.underlineStyle] = NSUnderlineStyle.single.rawValue; out[.underlineColor] = color }
+        // Ссылка на заметку: тонкое подчёркивание, текст остаётся своим цветом.
+        if attrs[.zLink] != nil {
+            out[.underlineStyle] = NSUnderlineStyle.single.rawValue
+            out[.underlineColor] = color.withAlphaComponent(0.4)
+        }
         if attrs[.zStrike] != nil || block == .done {
             out[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
             out[.strikethroughColor] = color
@@ -441,6 +448,14 @@ enum Formatting {
         var order: Double?
         /// Стиль страницы; nil у старых заметок - стиль по умолчанию.
         var style: PageStyle?
+        /// Закреплена наверху списка.
+        var pinned: Bool?
+        /// Ежедневная заметка за этот день («2026-10-10»); nil у обычных.
+        var daily: String?
+        /// Заметка закрыта: текст на диске зашифрован.
+        var locked: Bool?
+        /// Зашифрованные текст и оформление (base64); у закрытой заметки в файле текста нет.
+        var sealed: String?
     }
 
     /// Кусок текста с одинаковым оформлением. Позиции - в UTF-16, как в NSString.
@@ -466,6 +481,7 @@ enum Formatting {
         var board: String?
         var whiteboard: String?
         var audio: String?
+        var link: String?
 
         /// То же оформление, без учёта места.
         func sameLook(_ other: Run) -> Bool {
@@ -502,6 +518,7 @@ enum Formatting {
             }
             if let whiteboard = run.whiteboard { attrs[.zWhiteboard] = whiteboard }
             if let audio = run.audio { attrs[.zAudio] = audio }
+            if let link = run.link { attrs[.zLink] = link }
             if let attachment = Objects.attachment(for: attrs) { attrs[.attachment] = attachment }
             out.addAttributes(attrs, range: range)
         }
@@ -537,6 +554,7 @@ enum Formatting {
             run.board = attrs[.zBoard] as? String
             run.whiteboard = attrs[.zWhiteboard] as? String
             run.audio = attrs[.zAudio] as? String
+            run.link = attrs[.zLink] as? String
             if attrs[.zCollapsed] != nil { run.collapsed = true }
             run.lang = attrs[.zLang] as? String
             let empty = Run(from: run.from, length: run.length)
