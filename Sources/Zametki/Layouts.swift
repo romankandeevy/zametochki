@@ -349,10 +349,17 @@ struct SearchField: View {
 
     var body: some View {
         HStack(spacing: 7) {
-            Image(systemName: "magnifyingglass").font(.system(size: 11.5, weight: .semibold)).opacity(0.5)
-            TextField("Поиск", text: $text)
+            Image(systemName: "magnifyingglass").font(.system(size: 11.5, weight: .semibold)).opacity(0.8)
+            TextField("", text: $text)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12.5))
+                .foregroundStyle(.white)
+                // Подсказку рисуем сами: у системного prompt на macOS цвет не меняется.
+                .overlay(alignment: .leading) {
+                    if text.isEmpty {
+                        Text("Поиск").font(.system(size: 12.5)).foregroundStyle(.white).allowsHitTesting(false)
+                    }
+                }
             if !text.isEmpty {
                 Button { text = "" } label: { Image(systemName: "xmark.circle.fill").opacity(0.5) }
                     .buttonStyle(.plain)
@@ -361,6 +368,7 @@ struct SearchField: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 30)
+        .foregroundStyle(.white)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.white.opacity(0.07)))
     }
 }

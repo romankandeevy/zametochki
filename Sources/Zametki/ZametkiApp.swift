@@ -114,7 +114,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     static var store: Store?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        DockIcon.update()
         UNUserNotificationCenter.current().delegate = self
         QuickNote.shared.updateHotKey()
     }
@@ -135,6 +134,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             completionHandler()
         }
     }
+    /// Ссылки zametki://quick (окошко быстрой заметки) и zametki://inbox (открыть «Входящие») - из виджета.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "zametki" {
+            switch url.host {
+            case "quick": QuickNote.shared.show()
+            case "inbox":
+                NSApp.activate(ignoringOtherApps: true)
+                if let store = Self.store, let id = store.inboxID(createIfMissing: false) { store.select(id) }
+            default: break
+            }
+        }
+    }
+
     /// Меню на иконке в Dock: быстрая заметка и заметка за сегодня без открытия окна.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()

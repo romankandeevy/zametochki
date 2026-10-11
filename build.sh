@@ -1,5 +1,5 @@
 #!/bin/bash
-# Сборка Заметочки.app. Нужны только Command Line Tools (xcode-select --install).
+# Сборка Заметочки.app. Для виджета нужен Xcode (SDK WidgetKit); без него приложение собирается без виджета.
 #
 #   ./build.sh          собрать build/Zametki.app
 #   ./build.sh run      собрать и запустить отсюда (для разработки)
@@ -29,6 +29,23 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp build/icon-out/AppIcon.icns build/icon-out/Assets.car Resources/Caveat.ttf Resources/OFL.txt "$APP/Contents/Resources/"
 SIGN_ID="-"
 security find-identity -v -p codesigning 2>/dev/null | grep -q "Local Dev Signing" && SIGN_ID="Local Dev Signing"
+
+# Виджет «Входящие»: расширение WidgetKit собирается напрямую swiftc и кладётся в PlugIns.
+if xcrun --sdk macosx --show-sdk-path >/dev/null 2>&1 && [ -f Widget/ZametkiWidget.swift ]; then
+    echo "==> виджет"
+    WEXT="$APP/Contents/PlugIns/ZametkiWidget.appex"
+    mkdir -p "$WEXT/Contents/MacOS" "$WEXT/Contents/Resources"
+    if swiftc -O -parse-as-library -application-extension -target "$(uname -m)-apple-macos14.0" \
+        -framework WidgetKit -framework SwiftUI -Xlinker -e -Xlinker _NSExtensionMain \
+        -o "$WEXT/Contents/MacOS/ZametkiWidget" Widget/ZametkiWidget.swift; then
+        cp Widget/Info.plist "$WEXT/Contents/Info.plist"
+        cp Resources/Caveat.ttf "$WEXT/Contents/Resources/"
+        codesign --force --sign "$SIGN_ID" --entitlements Widget/ZametkiWidget.entitlements "$WEXT"
+    else
+        echo "!! виджет не собрался, приложение без него"
+        rm -rf "$APP/Contents/PlugIns"
+    fi
+fi
 codesign --force --sign "$SIGN_ID" "$APP"
 echo "==> готово: $APP"
 

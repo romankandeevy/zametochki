@@ -83,7 +83,6 @@ struct PageStyle: Codable, Equatable {
 
     func makeDefault() {
         if let data = try? JSONEncoder().encode(self) { UserDefaults.standard.set(data, forKey: "defaultPageStyle") }
-        DockIcon.update(self)
     }
 
     // MARK: цвета

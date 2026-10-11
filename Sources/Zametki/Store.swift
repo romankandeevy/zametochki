@@ -64,6 +64,7 @@ final class Store {
         // Запуск с «-openNote <id>» сразу открывает эту заметку (для скриншотов и ролика).
         if let id = UserDefaults.standard.string(forKey: "openNote"), note(id) != nil { select(id) }
         Reminders.sync(self)
+        WidgetFeed.publish(self)
     }
 
     var selected: Note? { note(selectedID) }
@@ -291,6 +292,7 @@ final class Store {
         let text = NSMutableAttributedString(attributedString: Formatting.attributed(notes[i].doc))
         body(text)
         var doc = Formatting.doc(from: text)
+        if id == UserDefaults.standard.string(forKey: "inboxNote") { Self.keepInboxTitle(&doc) }
         doc.parent = notes[i].doc.parent
         doc.order = notes[i].doc.order
         doc.style = notes[i].doc.style
@@ -302,6 +304,25 @@ final class Store {
         notes[i].modified = Date()
         notes[i].revision += 1
         scheduleSave(id)
+    }
+
+    /// «Входящие» - служебная заметка: первая строка всегда «Входящие» и не переименовывается.
+    /// Остальной текст и его оформление сохраняются, сдвигаясь под новый заголовок.
+    static func keepInboxTitle(_ doc: inout Formatting.Doc) {
+        let title = "Входящие"
+        let ns = doc.text as NSString
+        let brk = ns.range(of: "\n")
+        let firstLen = brk.location == NSNotFound ? ns.length : brk.location
+        let rest = brk.location == NSNotFound ? "" : ns.substring(from: brk.location)
+        doc.text = title + rest
+        let delta = title.utf16.count - firstLen
+        doc.runs = doc.runs.compactMap { run in
+            guard run.from >= firstLen else { return nil }
+            var moved = run
+            moved.from = run.from + delta
+            return moved
+        }
+        doc.runs.append(Formatting.Run(from: 0, length: title.utf16.count, block: Block.title.rawValue))
     }
 
     /// Блоки, перетащенные на карточку, переезжают в конец страницы.
@@ -330,6 +351,13 @@ final class Store {
         let id = create(doc: doc, open: false)
         UserDefaults.standard.set(id, forKey: "inboxNote")
         return id
+    }
+
+    /// Id «Входящих», если заметка уже есть; новую не создаёт.
+    func inboxID(createIfMissing: Bool) -> String? {
+        if let id = UserDefaults.standard.string(forKey: "inboxNote"), note(id) != nil { return id }
+        if let found = notes.first(where: { $0.parent == nil && $0.title == "Входящие" }) { return found.id }
+        return createIfMissing ? inboxID() : nil
     }
 
     /// Быстрая заметка - в конец «Входящих». Разметка в начале строки работает: «[] » - задача, «- » - список.
@@ -636,6 +664,7 @@ final class Store {
         pendingSave[id] = nil
         write(id)
         Reminders.sync(self)
+        if id == UserDefaults.standard.string(forKey: "inboxNote") { WidgetFeed.publish(self) }
     }
 
     private func write(_ id: String) {
